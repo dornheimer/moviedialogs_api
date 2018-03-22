@@ -3,7 +3,7 @@ import logging
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from mappings import (Base, Title, Genre, TitleGenres, Character, Line,
+from mappings import (Base, Movie, Genre, MovieGenres, Character, Line,
                       Conversation, ConversationLines)
 
 GENRES = {
@@ -47,26 +47,25 @@ def insert_genres(session):
     logging.info("inserted %s genres", len(GENRES))
 
 
-def insert_titles(session):
-    logging.info("inserting titles ...")
+def insert_movies(session):
+    logging.info("inserting movies ...")
 
-    table_fields = [c.name for c in Title.__table__.columns]
+    table_fields = [c.name for c in Movie.__table__.columns]
     data_stream = prepare_data('corpus/movie_titles_metadata.txt', table_fields)
     for count, data in enumerate(data_stream, 1):
         title_data, genres = data
 
-        title = Title(**title_data)
+        title = Movie(**title_data)
         session.add(title)
 
         for g in genres:
-            genre_id = session.query(
-                Genre.genre_id).filter(Genre.name == g).first()[0]
+            genre_id = session.query(Genre.id).filter(Genre.name == g).first()[0]
 
-            title_genre = TitleGenres(movie_id=title_data['movie_id'],
+            title_genre = MovieGenres(movie_id=title_data['id'],
                                       genre_id=genre_id)
             session.add(title_genre)
     session.commit()
-    logging.info("inserted %s titles", count)
+    logging.info("inserted %s movies", count)
 
 
 def insert_characters(session):
@@ -100,17 +99,15 @@ def insert_lines(session):
 def insert_conversations(session):
     logging.info("inserting conversations ...")
 
-    # Omit conversation_id field since it is automatically generated
+    # Omit id field since it is automatically generated
     table_fields = [c.name for c in Conversation.__table__.columns
-                    if c.name != 'conversation_id']
+                    if c.name != 'id']
     data_stream = prepare_data('corpus/movie_conversations.txt', table_fields)
     for conv_id, data in enumerate(data_stream, 1):
         conv_data, line_ids = data
 
-        conversation = Conversation(conversation_id=conv_id, **conv_data)
+        conversation = Conversation(id=conv_id, **conv_data)
         session.add(conversation)
-        # conv_id = conversation.conversation_id
-        # print(conv_id)
 
         for l_id in line_ids:
             title_genre = ConversationLines(
@@ -134,7 +131,7 @@ def main():
     Base.metadata.create_all(engine)
 
     insert_genres(session)
-    insert_titles(session)
+    insert_movies(session)
     insert_characters(session)
     insert_lines(session)
     insert_conversations(session)
