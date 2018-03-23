@@ -1,7 +1,7 @@
 import ast
 import logging
 import os
-from sqlalchemy import create_engine, bindparam
+from sqlalchemy import create_engine
 from sqlalchemy.ext import baked
 from sqlalchemy.orm import sessionmaker
 from mappings import Base, Movie, Genre, Character, Line, Conversation
@@ -109,7 +109,6 @@ def insert_conversations(session):
     # statement every single time (no query caching, only minor effect)
     bakery = baked.bakery()
     baked_query = bakery(lambda session: session.query(Line))
-    # baked_query += lambda q: q.filter(Line.id == bindparam('id'))
 
     for conv_id, data in enumerate(data_stream, 1):
         conv_data, line_ids = data
@@ -130,9 +129,6 @@ def insert_conversations(session):
             conversation.characters.append(char_obj)
 
         for l_id in line_ids:
-            # line = session.query(Line).filter_by(id=l_id).first()
-            # line = baked_query(session).params(id=l_id).first()
-
             # Get looks up primary key in identity map
             line = baked_query(session).get(l_id)
             conversation.lines.append(line)
@@ -152,7 +148,7 @@ def main():
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    Base.metadata.create_all(engine)
+    # Base.metadata.create_all(engine)
 
     insert_movies(session)
     insert_characters(session)
