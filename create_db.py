@@ -6,6 +6,9 @@ from sqlalchemy.ext import baked
 from sqlalchemy.orm import sessionmaker
 from mappings import Base, Movie, Genre, Character, Line, Conversation
 
+directory = os.path.abspath(os.path.dirname(__file__))
+database_uri = 'sqlite:///' + os.path.join(directory, 'movie_dialogs.db')
+
 
 def get_data(path):
     with open(path, encoding='latin-1') as f:
@@ -144,9 +147,6 @@ def insert_conversations(session):
 
 
 def main():
-    directory = os.path.abspath(os.path.dirname(__file__))
-    database_uri = 'sqlite:///' + os.path.join(directory, 'movie_dialogs.db')
-
     engine = create_engine(database_uri)
 
     Session = sessionmaker(bind=engine)
