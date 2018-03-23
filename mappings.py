@@ -1,24 +1,30 @@
-from sqlalchemy import Column, Float, Integer, String, ForeignKey
+from sqlalchemy import (Table, Column, Float, Integer, String, ForeignKey,
+                        ForeignKeyConstraint)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+movies_genres = Table('movie_genres', Base.metadata,
+                      Column('movie_id', String, ForeignKey('movies.id')),
+                      Column('genre_id', String, ForeignKey('genres.id'))
+                      )
+
 
 class Movie(Base):
     __tablename__ = 'movies'
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True, index=True)
     title = Column(String)
     year = Column(Integer)
     imdb_rating = Column(Float)
     num_imdb_votes = Column(Integer)
-    genres = Column(String)
 
-    #characters = relationship('Character', backref='movie')
-    lines = relationship('Line', backref='movie')
-    conversations = relationship('Conversation', backref='movie')
-    genres = relationship('MovieGenres', backref='movie')
+    genres = relationship('Genre', secondary=movies_genres,
+                          back_populates='movies')
+    characters = relationship('Character', back_populates='movie')
+    lines = relationship('Line', back_populates='movie')
+    conversations = relationship('Conversation', back_populates='movie')
 
     def __repr__(self):
         return ('<Movie {!r}>').format(self.title)
@@ -30,30 +36,38 @@ class Genre(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, index=True)
 
+    movies = relationship('Movie', secondary=movies_genres,
+                          back_populates='genres')
+
     def __repr__(self):
         return ('<Genre {!r}>').format(self.name)
 
 
-class MovieGenres(Base):
-    __tablename__ = 'movie_genres'
-
-    movie_id = Column(String, ForeignKey('movies.id'), primary_key=True)
-    genre_id = Column(String, ForeignKey('genres.id'), primary_key=True)
+convs_chars = Table('convs_chars', Base.metadata,
+                    Column('conversation_id', String,
+                           ForeignKey('conversations.id')),
+                    Column('character_id', String, ForeignKey('characters.id'))
+                    )
 
 
 class Character(Base):
     __tablename__ = 'characters'
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True, index=True)
     name = Column(String)
-    movie_id = Column(String, ForeignKey('movies.id'))
-    movie_title = Column(String, ForeignKey('movies.title'))
+    movie_id = Column(String)
+    movie_title = Column(String)
     gender = Column(String, nullable=True)
     credit_pos = Column(Integer, nullable=True)
 
-    #lines = relationship('Line')
-    character_movie_id = relationship('Movie', foreign_keys='Character.movie_id')
-    character_movie_title = relationship('Movie', foreign_keys='Character.movie_title')
+    __table_args__ = (ForeignKeyConstraint([movie_id, movie_title],
+                                           [Movie.id, Movie.title]),
+                      {})
+
+    movie = relationship('Movie', back_populates='characters')
+    lines = relationship('Line', back_populates='character')
+    conversations = relationship('Conversation', secondary=convs_chars,
+                                 back_populates='characters')
 
     def __repr__(self):
         return ('<Character {!r}>').format(self.name)
@@ -63,19 +77,22 @@ class Line(Base):
     __tablename__ = 'lines'
 
     id = Column(String, primary_key=True, index=True)
-    character_id = Column(String, ForeignKey('characters.id'))
+    character_id = Column(String)
     movie_id = Column(String, ForeignKey('movies.id'))
-    character_name = Column(String, ForeignKey('characters.name'))
+    character_name = Column(String)
     text = Column(String)
+    conversation_id = Column(Integer, ForeignKey('conversations.id'))
 
-    conversations = relationship('ConversationLines', backref='lines')
-    line_character_id = relationship('Character',
-                                     foreign_keys='Line.character_id')
-    line_character_name = relationship('Character',
-                                       foreign_keys='Line.character_name')
+    __table_args__ = (ForeignKeyConstraint([character_id, character_name],
+                                           [Character.id, Character.name]),
+                      {})
+
+    movie = relationship('Movie', back_populates='lines')
+    conversation = relationship('Conversation', back_populates='lines')
+    character = relationship('Character', back_populates='lines')
 
     def __repr__(self):
-        return ('<Line {!r}>').format(self.line_id)
+        return ('<Line {!r}>').format(self.id)
 
 
 class Conversation(Base):
@@ -86,16 +103,11 @@ class Conversation(Base):
     second_char_id = Column(String, ForeignKey('characters.id'))
     movie_id = Column(String, ForeignKey('movies.id'))
 
-    lines = relationship('ConversationLines', backref='conversations')
+    movie = relationship('Movie', back_populates='conversations')
+    lines = relationship('Line', back_populates='conversation')
+    characters = relationship('Character', secondary=convs_chars,
+                              back_populates='conversations')
 
     def __repr__(self):
         return ('<Conversation {!r} ({}, {})>').format(
             self.movie_id, self.first_char_id, self.second_char_id)
-
-
-class ConversationLines(Base):
-    __tablename__ = 'conversation_lines'
-
-    conversation_id = Column(Integer, ForeignKey('conversations.id'),
-                             primary_key=True)
-    line_id = Column(String, ForeignKey('lines.id'), primary_key=True)

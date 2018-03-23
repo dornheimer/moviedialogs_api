@@ -1,17 +1,10 @@
 import ast
 import logging
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, bindparam
+from sqlalchemy.ext import baked
 from sqlalchemy.orm import sessionmaker
-from mappings import (Base, Movie, Genre, MovieGenres, Character, Line,
-                      Conversation, ConversationLines)
-
-GENRES = {
-    'family', 'film-noir', 'documentary', 'history', 'adult', 'horror',
-    'music', 'western', 'thriller', 'drama', 'war', 'mystery', 'animation',
-    'sport', 'comedy', 'fantasy', 'short', 'musical', 'sci-fi', 'biography',
-    'romance', 'adventure', 'action', 'crime'
-}
+from mappings import Base, Movie, Genre, Character, Line, Conversation
 
 
 def get_data(path):
@@ -38,32 +31,28 @@ def prepare_data(path, table_fields):
         yield {k: v for k, v in zip(table_fields, data)}, data[-1]
 
 
-def insert_genres(session):
-    logging.info("inserting genres ...")
-    for genre in GENRES:
-        g = Genre(name=genre)
-        session.add(g)
-    session.commit()
-    logging.info("inserted %s genres", len(GENRES))
-
-
 def insert_movies(session):
     logging.info("inserting movies ...")
 
     table_fields = [c.name for c in Movie.__table__.columns]
-    data_stream = prepare_data('corpus/movie_titles_metadata.txt', table_fields)
+    data_stream = prepare_data('corpus/movie_titles_metadata.txt',
+                               table_fields)
     for count, data in enumerate(data_stream, 1):
         title_data, genres = data
 
         title = Movie(**title_data)
-        session.add(title)
 
         for g in genres:
-            genre_id = session.query(Genre.id).filter(Genre.name == g).first()[0]
+            g_obj = session.query(Genre).filter_by(name=g).first()
+            # Create genre if it does not exist yet
+            if g_obj is None:
+                g_obj = Genre(name=g)
+                session.add(g_obj)
 
-            title_genre = MovieGenres(movie_id=title_data['id'],
-                                      genre_id=genre_id)
-            session.add(title_genre)
+            title.genres.append(g_obj)
+
+        session.add(title)
+
     session.commit()
     logging.info("inserted %s movies", count)
 
@@ -72,7 +61,8 @@ def insert_characters(session):
     logging.info("inserting characters ...")
 
     table_fields = [c.name for c in Character.__table__.columns]
-    data_stream = prepare_data('corpus/movie_characters_metadata.txt', table_fields)
+    data_stream = prepare_data('corpus/movie_characters_metadata.txt',
+                               table_fields)
     for count, data in enumerate(data_stream, 1):
         character_data, _ = data
 
@@ -92,7 +82,10 @@ def insert_lines(session):
 
         line = Line(**line_data)
         session.add(line)
+        print(f"lines {count}\r", end="")
+
     session.commit()
+    print("")
     logging.info("inserted %s lines", count)
 
 
@@ -103,19 +96,50 @@ def insert_conversations(session):
     table_fields = [c.name for c in Conversation.__table__.columns
                     if c.name != 'id']
     data_stream = prepare_data('corpus/movie_conversations.txt', table_fields)
+    first_char_id, second_char_id = None, None
+
+    # 'load' lines into session identity map to make lookup with get() faster.
+    # session should usually not be used for caching, but it works here
+    lines = session.query(Line).all()
+
+    # use baked query to reduce the python overhead of constructing the SQL
+    # statement every single time (no query caching, only minor effect)
+    bakery = baked.bakery()
+    baked_query = bakery(lambda session: session.query(Line))
+    # baked_query += lambda q: q.filter(Line.id == bindparam('id'))
+
     for conv_id, data in enumerate(data_stream, 1):
         conv_data, line_ids = data
 
         conversation = Conversation(id=conv_id, **conv_data)
-        session.add(conversation)
+
+        if first_char_id != conversation.first_char_id:
+            first_char_id = conversation.first_char_id
+            first_char = session.query(Character). \
+                filter_by(id=first_char_id).first()
+
+        if second_char_id != conversation.second_char_id:
+            second_char_id = conversation.second_char_id
+            second_char = session.query(Character). \
+                filter_by(id=second_char_id).first()
+
+        for char_obj in (first_char, second_char):
+            conversation.characters.append(char_obj)
 
         for l_id in line_ids:
-            title_genre = ConversationLines(
-                conversation_id=conv_id,
-                line_id=l_id)
-            session.add(title_genre)
+            # line = session.query(Line).filter_by(id=l_id).first()
+            # line = baked_query(session).params(id=l_id).first()
+
+            # Get looks up primary key in identity map
+            line = baked_query(session).get(l_id)
+            conversation.lines.append(line)
+
+        print(f"conversations {conv_id}\r", end="")
+
+        session.add(conversation)
 
     session.commit()
+    print("")
     logging.info("inserted %s conversations", conv_id)
 
 
@@ -130,7 +154,6 @@ def main():
 
     Base.metadata.create_all(engine)
 
-    insert_genres(session)
     insert_movies(session)
     insert_characters(session)
     insert_lines(session)
