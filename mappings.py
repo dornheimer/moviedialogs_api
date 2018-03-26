@@ -1,5 +1,5 @@
 from sqlalchemy import (Table, Column, Float, Integer, String, ForeignKey,
-                        ForeignKeyConstraint)
+                        ForeignKeyConstraint, Index)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -7,18 +7,21 @@ Base = declarative_base()
 
 movies_genres = Table('movie_genres', Base.metadata,
                       Column('movie_id', String, ForeignKey('movies.id')),
-                      Column('genre_id', String, ForeignKey('genres.id'))
+                      Column('genre_id', Integer, ForeignKey('genres.id'))
                       )
 
 
 class Movie(Base):
     __tablename__ = 'movies'
 
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String, primary_key=True)
     title = Column(String)
-    year = Column(Integer)
+    year = Column(String)
     imdb_rating = Column(Float)
     num_imdb_votes = Column(Integer)
+
+    __table_args__ = (Index('movie_ix', 'id', 'title', unique=True),
+                      {})
 
     genres = relationship('Genre', secondary=movies_genres,
                           back_populates='movies')
@@ -44,7 +47,7 @@ class Genre(Base):
 
 
 convs_chars = Table('convs_chars', Base.metadata,
-                    Column('conversation_id', String,
+                    Column('conversation_id', Integer,
                            ForeignKey('conversations.id')),
                     Column('character_id', String, ForeignKey('characters.id'))
                     )
@@ -53,7 +56,7 @@ convs_chars = Table('convs_chars', Base.metadata,
 class Character(Base):
     __tablename__ = 'characters'
 
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String, primary_key=True)
     name = Column(String)
     movie_id = Column(String)
     movie_title = Column(String)
@@ -62,6 +65,7 @@ class Character(Base):
 
     __table_args__ = (ForeignKeyConstraint([movie_id, movie_title],
                                            [Movie.id, Movie.title]),
+                      Index('character_ix', 'id', 'name', unique=True),
                       {})
 
     movie = relationship('Movie', back_populates='characters')

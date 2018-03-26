@@ -9,6 +9,7 @@ from mappings import Base, Movie, Genre, Character, Line, Conversation
 
 directory = os.path.abspath(os.path.dirname(__file__))
 database_uri = 'sqlite:///' + os.path.join(directory, 'movie_dialogs.sqlite')
+# database_uri = 'postgresql://user:password@localhost:5432/database'
 
 
 def get_data(path):
