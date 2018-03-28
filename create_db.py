@@ -3,7 +3,6 @@ import ast
 import logging
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.ext import baked
 from sqlalchemy.orm import sessionmaker
 from mappings import Base, Movie, Genre, Character, Line, Conversation
 
@@ -77,15 +76,16 @@ def insert_characters(session):
     logging.info("inserted %s characters", count)
 
 
-def insert_lines(session):
+def insert_lines(session, line_to_conv):
     logging.info("inserting lines ...")
 
     table_fields = [c.name for c in Line.__table__.columns]
     data_stream = prepare_data('corpus/movie_lines.txt', table_fields)
     for count, data in enumerate(data_stream, 1):
         line_data, _ = data
+        conv_id = line_to_conv[line_data['id']]
 
-        line = Line(**line_data)
+        line = Line(conversation_id=conv_id, **line_data)
         session.add(line)
         print(f"lines {count}\r", end="")
 
@@ -103,15 +103,8 @@ def insert_conversations(session):
     data_stream = prepare_data('corpus/movie_conversations.txt', table_fields)
     first_char_id, second_char_id = None, None
 
-    # 'load' lines into session identity map to make lookup with get() faster.
-    # session should usually not be used for caching, but it works here
-    lines = session.query(Line).all()
 
-    # use baked query to reduce the python overhead of constructing the SQL
-    # statement every single time (no query caching, only minor effect)
-    bakery = baked.bakery()
-    baked_query = bakery(lambda session: session.query(Line))
-
+    line_to_conv = {}
     for conv_id, data in enumerate(data_stream, 1):
         conv_data, line_ids = data
 
@@ -131,9 +124,7 @@ def insert_conversations(session):
             conversation.characters.append(char_obj)
 
         for l_id in line_ids:
-            # Get looks up primary key in identity map
-            line = baked_query(session).get(l_id)
-            conversation.lines.append(line)
+            line_to_conv[l_id] = conv_id
 
         print(f"conversations {conv_id}\r", end="")
 
@@ -142,6 +133,8 @@ def insert_conversations(session):
     session.commit()
     print("")
     logging.info("inserted %s conversations", conv_id)
+
+    return line_to_conv
 
 
 def main():
@@ -154,8 +147,8 @@ def main():
 
     insert_movies(session)
     insert_characters(session)
-    insert_lines(session)
-    insert_conversations(session)
+    line_to_conv = insert_conversations(session)
+    insert_lines(session, line_to_conv)
 
 
 if __name__ == '__main__':
