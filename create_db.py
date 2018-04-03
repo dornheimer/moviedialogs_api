@@ -3,7 +3,6 @@ import ast
 import logging
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.ext import baked
 from sqlalchemy.orm import sessionmaker
 from mappings import Base, Movie, Genre, Character, Line, Conversation
 
@@ -77,15 +76,16 @@ def insert_characters(session):
     logging.info("inserted %s characters", count)
 
 
-def insert_lines(session):
+def insert_lines(session, line_to_conv_mapping):
     logging.info("inserting lines ...")
 
     table_fields = [c.name for c in Line.__table__.columns]
     data_stream = prepare_data('corpus/movie_lines.txt', table_fields)
     for count, data in enumerate(data_stream, 1):
         line_data, _ = data
+        conv_id = line_to_conv_mapping[line_data['id']]
 
-        line = Line(**line_data)
+        line = Line(conversation_id=conv_id, **line_data)
         session.add(line)
         print(f"lines {count}\r", end="")
 
@@ -101,47 +101,38 @@ def insert_conversations(session):
     table_fields = [c.name for c in Conversation.__table__.columns
                     if c.name != 'id']
     data_stream = prepare_data('corpus/movie_conversations.txt', table_fields)
-    first_char_id, second_char_id = None, None
 
-    # 'load' lines into session identity map to make lookup with get() faster.
-    # session should usually not be used for caching, but it works here
-    lines = session.query(Line).all()
+    # 'load' characters into session identity map to make lookup with get()
+    # faster. session should usually not be used for caching, but it works here
+    characters = session.query(Character).all()
 
-    # use baked query to reduce the python overhead of constructing the SQL
-    # statement every single time (no query caching, only minor effect)
-    bakery = baked.bakery()
-    baked_query = bakery(lambda session: session.query(Line))
-
+    line_to_conv_mapping = {}
+    characters = {}
     for conv_id, data in enumerate(data_stream, 1):
         conv_data, line_ids = data
 
-        conversation = Conversation(id=conv_id, **conv_data)
+        conv = Conversation(id=conv_id, **conv_data)
 
-        if first_char_id != conversation.first_char_id:
-            first_char_id = conversation.first_char_id
-            first_char = session.query(Character). \
-                filter_by(id=first_char_id).first()
+        for char_id in (conv.first_char_id, conv.second_char_id):
+            char = characters.get(char_id, None)
+            if char is None:
+                char = session.query(Character).get(char_id)
+                characters[char_id] = char
 
-        if second_char_id != conversation.second_char_id:
-            second_char_id = conversation.second_char_id
-            second_char = session.query(Character). \
-                filter_by(id=second_char_id).first()
-
-        for char_obj in (first_char, second_char):
-            conversation.characters.append(char_obj)
+            conv.characters.append(char)
 
         for l_id in line_ids:
-            # Get looks up primary key in identity map
-            line = baked_query(session).get(l_id)
-            conversation.lines.append(line)
+            line_to_conv_mapping[l_id] = conv_id
 
         print(f"conversations {conv_id}\r", end="")
 
-        session.add(conversation)
+        session.add(conv)
 
     session.commit()
     print("")
     logging.info("inserted %s conversations", conv_id)
+
+    return line_to_conv_mapping
 
 
 def main():
@@ -154,8 +145,8 @@ def main():
 
     insert_movies(session)
     insert_characters(session)
-    insert_lines(session)
-    insert_conversations(session)
+    line_to_conv_mapping = insert_conversations(session)
+    insert_lines(session, line_to_conv_mapping)
 
 
 if __name__ == '__main__':
