@@ -4,7 +4,7 @@ import sys
 import textwrap
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from mappings import Conversation, Character, Movie, Genre
+from mappings import Conversation, Character, Movie, Genre, Line
 from create_db import database_uri
 
 
@@ -20,12 +20,7 @@ def print_conversation(session, conversation_id, show_info=True):
         print("*" * 20)
 
     for line in reversed(lines):
-        s = f"{line.id} {line.character_name}: {line}"
-        s = s.encode('ascii', 'ignore').decode('utf-8')
-        for line_num, wrapped_line in enumerate(textwrap.wrap(s)):
-            if line_num != 0:
-                wrapped_line = "\t" + wrapped_line
-            print(wrapped_line)
+        print_line(line)
 
 
 def print_movie(session, movie_id, show_convs=False, to_file=False):
@@ -89,12 +84,22 @@ def print_genre(session, genre_id, show_movies=False):
         print(", ".join(movies))
 
 
+def print_line(line):
+        s = f"{line.id} {line.character_name}: {line}"
+        s = s.encode('ascii', 'ignore').decode('utf-8')
+        for line_num, wrapped_line in enumerate(textwrap.wrap(s)):
+            if line_num != 0:
+                wrapped_line = "\t" + wrapped_line
+            print(wrapped_line)
+
+
 def parse_commandline():
     parser = argparse.ArgumentParser()
     parser.add_argument('--conversation', '-c', metavar='<conversation_id>')
     parser.add_argument('--genre', '-g', metavar='<genre_id>')
     parser.add_argument('--character', '-k', metavar='<character_id>')
     parser.add_argument('--movie', '-m', metavar='<movie_id>')
+    parser.add_argument('--line', '-l', metavar='<line_id>')
     parser.add_argument('--to_file', action='store_true')
 
     return parser.parse_args()
@@ -116,6 +121,9 @@ def main(args):
                         show_lines=True)
     if args.genre:
         print_genre(session, args.genre, show_movies=True)
+    if args.line:
+        line = session.query(Line).get(args.line)
+        print_line(line)
 
 
 if __name__ == '__main__':
