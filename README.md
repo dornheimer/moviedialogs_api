@@ -8,3 +8,12 @@ read data from movie dialogs corpus into a database. uses SQLAlchemy with Alembi
 * for PostgreSQL: start server on localhost and create database, change `database_uri` in `create_db.py` accordingly
 * `cd` into project folder and run `alembic upgrade head` to create database tables
 * run `create_db.py`
+
+## explore data
+run `explore.py [OPTIONS]` to print out single datapoints
+
+example:
+
+    python3 explore.py --movie m34
+
+`explore.py -h` for a list of options
