@@ -32,6 +32,9 @@ class Movie(Base):
     def __repr__(self):
         return ('<Movie {!r}>').format(self.title)
 
+    def __str__(self):
+        return self.title
+
 
 class Genre(Base):
     __tablename__ = 'genres'
@@ -44,6 +47,9 @@ class Genre(Base):
 
     def __repr__(self):
         return ('<Genre {!r}>').format(self.name)
+
+    def __str__(self):
+        return self.name
 
 
 convs_chars = Table('convs_chars', Base.metadata,
@@ -76,6 +82,9 @@ class Character(Base):
     def __repr__(self):
         return ('<Character {!r}>').format(self.name)
 
+    def __str__(self):
+        return self.name
+
 
 class Line(Base):
     __tablename__ = 'lines'
@@ -97,6 +106,9 @@ class Line(Base):
 
     def __repr__(self):
         return ('<Line {!r}>').format(self.id)
+
+    def __str__(self):
+        return self.text
 
 
 class Conversation(Base):
