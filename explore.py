@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import textwrap
@@ -88,17 +89,35 @@ def print_genre(session, genre_id, show_movies=False):
         print(", ".join(movies))
 
 
-def main():
+def parse_commandline():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--conversation', '-c', metavar='<conversation_id>')
+    parser.add_argument('--genre', '-g', metavar='<genre_id>')
+    parser.add_argument('--character', '-k', metavar='<character_id>')
+    parser.add_argument('--movie', '-m', metavar='<movie_id>')
+    parser.add_argument('--to_file', action='store_true')
+
+    return parser.parse_args()
+
+
+def main(args):
     engine = create_engine(database_uri)
 
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    print_conversation(session, 500)
-    print_movie(session, 'm56', show_convs=True, to_file=True)
-    print_character(session, 'u35', show_convs=True, show_lines=True)
-    print_genre(session, '3', show_movies=True)
+    if args.conversation:
+        print_conversation(session, args.conversation)
+    if args.movie:
+        to_file = args.to_file
+        print_movie(session, args.movie, show_convs=True, to_file=to_file)
+    if args.character:
+        print_character(session, args.character, show_convs=True,
+                        show_lines=True)
+    if args.genre:
+        print_genre(session, args.genre, show_movies=True)
 
 
 if __name__ == '__main__':
-    main()
+    args = parse_commandline()
+    main(args)
