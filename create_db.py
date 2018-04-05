@@ -2,6 +2,7 @@
 import ast
 import logging
 import os
+import re
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from mappings import Base, Movie, Genre, Character, Line, Conversation
@@ -27,6 +28,12 @@ def process_line(line):
         split_line[-1] = ast.literal_eval(split_line[-1])  # Get it as a list
         split_line[-1] = set(split_line[-1])  # Enfore uniqueness of items
     return split_line
+
+
+def remove_html_tags(line_text):
+    # Use capture groups to enumerate, and reference group 2 for substitution
+    tag_regex = re.compile(r"(<\w+>(.+?)</\w+>)")
+    return re.sub(tag_regex, r"\2", line_text)
 
 
 def prepare_data(path, table_fields):
@@ -83,6 +90,7 @@ def insert_lines(session, line_to_conv_mapping):
     data_stream = prepare_data('corpus/movie_lines.txt', table_fields)
     for count, data in enumerate(data_stream, 1):
         line_data, _ = data
+        line_data['text'] = remove_html_tags(line_data['text'])
         conv_id = line_to_conv_mapping[line_data['id']]
 
         line = Line(conversation_id=conv_id, **line_data)
