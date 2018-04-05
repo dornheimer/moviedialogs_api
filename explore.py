@@ -31,6 +31,8 @@ def print_conversation(session, conversation_id, show_info=True):
     for line in reversed(conv.lines):
         print_line(line)
 
+    print("-" * 80)
+
 
 def print_movie(session, movie_id, show_convs=False, to_file=False):
     movie = session.query(Movie).get(movie_id)
@@ -63,12 +65,14 @@ def print_movie(session, movie_id, show_convs=False, to_file=False):
         convs = [str(conv.id) for conv in movie.conversations]
         print(", ".join(convs))
 
+    print("-" * 80)
+
     if to_file:
         print("")
         for conv in movie.conversations:
             print("CONV_ID", conv.id)
             print_conversation(session, conv.id, show_info=False)
-            print("*" * 20)
+        print("-" * 80)
         sys.stdout = sys.__stdout__
         f.close()
 
@@ -91,6 +95,8 @@ def print_character(session, character_id, show_convs=False, show_lines=False):
         lines = [str(line.id) for line in char.lines]
         print(", ".join(lines))
 
+    print("-" * 80)
+
 
 def print_genre(session, genre_id, show_movies=False):
     genre = session.query(Genre).get(genre_id)
@@ -101,6 +107,8 @@ def print_genre(session, genre_id, show_movies=False):
     if show_movies:
         movies = [str(movie.id) for movie in genre.movies]
         print(", ".join(movies))
+
+    print("-" * 80)
 
 
 def print_line(line):
@@ -156,12 +164,40 @@ def conversation_stats(conv):
 
 def parse_commandline():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--conversation', '-c', metavar='<conversation_id>')
-    parser.add_argument('--genre', '-g', metavar='<genre_id>')
-    parser.add_argument('--character', '-k', metavar='<character_id>')
-    parser.add_argument('--movie', '-m', metavar='<movie_id>')
-    parser.add_argument('--line', '-l', metavar='<line_id>')
-    parser.add_argument('--to_file', action='store_true')
+
+    parser.add_argument('--conversation', '-c',
+                        metavar='<conversation_id>',
+                        dest='conv_id',
+                        nargs='+',
+                        type=int)
+
+    parser.add_argument('--genre', '-g',
+                        metavar='<genre_id>',
+                        dest='genre_id',
+                        nargs='+',
+                        type=int)
+
+    parser.add_argument('--character', '-k',
+                        metavar='<character_id>',
+                        dest='char_id',
+                        nargs='+',)
+
+    parser.add_argument('--movie', '-m',
+                        metavar='<movie_id>',
+                        dest='movie_id',
+                        nargs='+',)
+
+    parser.add_argument('--line', '-l',
+                        metavar='<line_id>',
+                        dest='line_id',
+                        nargs='+',)
+
+    parser.add_argument('--to-file',
+                        action='store_true')
+
+    parser.add_argument('--range', '-r',
+                        type=int,
+                        default=1)
 
     return parser.parse_args()
 
@@ -172,19 +208,71 @@ def main(args):
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    if args.conversation:
-        print_conversation(session, args.conversation)
-    if args.movie:
-        to_file = args.to_file
-        print_movie(session, args.movie, show_convs=False, to_file=to_file)
-    if args.character:
-        print_character(session, args.character, show_convs=True,
-                        show_lines=True)
-    if args.genre:
-        print_genre(session, args.genre, show_movies=True)
-    if args.line:
-        line = session.query(Line).get(args.line)
-        print_line(line)
+    if args.conv_id:
+        if len(args.conv_id) > 1:
+            for c_id in args.conv_id:
+                print_conversation(session, c_id)
+        else:
+            start_id = args.conv_id[0]
+            stop_id = start_id + args.range
+            for c in range(start_id, stop_id):
+                print_conversation(session, c)
+
+    if args.movie_id:
+        if len(args.movie_id) > 1:
+            for m_id in args.movie_id:
+                print_movie(session, m_id, show_convs=False,
+                            to_file=args.to_file)
+        else:
+            start_id = args.movie_id[0]
+            start_id = int(start_id[1:])  # Get integer component of id
+            stop_id = start_id + args.range
+            for m in range(start_id, stop_id):
+                m_id = f"m{m}"
+                print_movie(session, m_id, show_convs=False,
+                            to_file=args.to_file)
+
+    if args.char_id:
+        if len(args.char_id) > 1:
+            for c_id in args.char_id:
+                print_character(session, c_id, show_convs=False)
+        else:
+            start_id = args.char_id[0]
+            start_id = int(start_id[1:])
+            stop_id = start_id + args.range
+            for c in range(start_id, stop_id):
+                c_id = f"u{c}"
+                print_character(session, c_id, show_convs=False)
+
+    if args.genre_id:
+        if len(args.genre_id) > 1:
+            for g_id in args.genre_id:
+                print_genre(session, g_id, show_movies=True)
+                print("-" * 80)
+        else:
+            start_id = args.genre_id[0]
+            stop_id = start_id + args.range
+            for g_id in range(start_id, stop_id):
+                print_genre(session, g_id, show_movies=True)
+
+    if args.line_id:
+        if len(args.line_id) > 1:
+            for l_id in args.line_id:
+                line = session.query(Line).get(l_id)
+                print_line(line)
+                print("-" * 80)
+        else:
+            start_id = args.line_id[0]
+            start_id = int(start_id[1:])
+            stop_id = start_id + args.range
+            for l in range(start_id, stop_id):
+                l_id = f"L{l}"
+                line = session.query(Line).get(l_id)
+                try:
+                    print_line(line)
+                except AttributeError:
+                    print("ERROR: Line does not exist")
+                print("-" * 80)
 
 
 if __name__ == '__main__':
