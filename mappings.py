@@ -110,6 +110,9 @@ class Line(Base):
     def __str__(self):
         return self.text
 
+    def __len__(self):
+        return len(self.text)
+
 
 class Conversation(Base):
     __tablename__ = 'conversations'
@@ -127,3 +130,6 @@ class Conversation(Base):
     def __repr__(self):
         return ('<Conversation {!r} ({}, {})>').format(
             self.movie_id, self.first_char_id, self.second_char_id)
+
+    def __len__(self):
+        return len(self.lines)
