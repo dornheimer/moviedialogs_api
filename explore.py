@@ -1,12 +1,20 @@
 import argparse
+from collections import namedtuple
 import os
 from operator import itemgetter
 import sys
 import textwrap
+import re
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from mappings import Conversation, Character, Movie, Genre, Line
 from create_db import database_uri
+
+
+def sanitize_html(line_text):
+    # Use capture groups to enumerate, and reference group 2 for substitution
+    tag_regex = re.compile(r"(<\w+>(.+?)</\w+>)")
+    return re.sub(tag_regex, r"\2", line_text)
 
 
 def print_conversation(session, conversation_id, show_info=True):
@@ -43,10 +51,13 @@ def print_movie(session, movie_id, show_convs=False, to_file=False):
     print(f"Characters ({len(movie.characters)}): {', '.join(str_characters)}")
     print("# Conversations: {}, # Lines: {}".format(
         len(movie.conversations), len(movie.lines)))
-    print("avg lines per conv: {:.2f}, avg line length: {:.2f}, f gender ratio: {:.2f}".format(
-        *stats[:3]))
-    print("chars_avg_lines_per_conv: {:.2f}, chars_avg_line_length: {:.2f}".format(
-        *stats[3:]))
+
+    print("avg lines per conv: {:.2f}".format(stats.lines_per_conv))
+    print("avg line length: {:.2f}".format(stats.avg_line_length))
+    print("f gender ratio: {:.2f}".format(stats.f_gender_ratio))
+    print("chars_avg_lines_per_conv: {:.2f}".format(
+        stats.chars_avg_lines_per_conv))
+    print("chars_avg_line_length: {:.2f}".format(stats.chars_avg_line_length))
 
     if show_convs:
         convs = [str(conv.id) for conv in movie.conversations]
@@ -93,8 +104,10 @@ def print_genre(session, genre_id, show_movies=False):
 
 
 def print_line(line):
-        s = f"{line.id} {line.character_name}: {line}"
-        s = s.encode('ascii', 'ignore').decode('utf-8')
+        line_text = line.text
+        line_text = line_text.encode('ascii', 'ignore').decode('utf-8')
+        line_text = sanitize_html(line_text)
+        s = f"{line.id} {line.character_name}: {line_text}"
         for line_num, wrapped_line in enumerate(textwrap.wrap(s)):
             if line_num != 0:
                 wrapped_line = "\t" + wrapped_line
@@ -107,14 +120,21 @@ def avg(numbers):
 
 def character_stats(char):
     lines_per_conv = len(char.lines) / len(char.conversations)
-    avg_line_length = avg([len(l) for l in char.lines])
+    avg_line_length = avg([len(sanitize_html(l.text)) for l in char.lines])
 
     return lines_per_conv, avg_line_length
 
 
+MovieStats = namedtuple(
+    'MovieStats',
+    ['lines_per_conv', 'avg_line_length', 'f_gender_ratio',
+     'chars_avg_lines_per_conv', 'chars_avg_line_length']
+     )
+
+
 def movie_stats(movie):
     lines_per_conv = len(movie.lines) / len(movie.conversations)
-    avg_line_length = avg([len(l) for l in movie.lines])
+    avg_line_length = avg([len(sanitize_html(l.text)) for l in movie.lines])
 
     chars_stats = [character_stats(char) for char in movie.characters]
     chars_avg_lines_per_conv = avg(list(map(itemgetter(0), chars_stats)))
@@ -124,11 +144,12 @@ def movie_stats(movie):
                if char.gender in ('f', 'm')]
     f_gender_ratio = genders.count('f') / len(genders)
 
-    return lines_per_conv, avg_line_length, f_gender_ratio, chars_avg_lines_per_conv, chars_avg_line_length
+    return MovieStats(lines_per_conv, avg_line_length, f_gender_ratio,
+                      chars_avg_lines_per_conv, chars_avg_line_length)
 
 
 def conversation_stats(conv):
-    avg_line_length = avg([len(l) for l in conv.lines])
+    avg_line_length = avg([len(sanitize_html(l.text)) for l in conv.lines])
 
     return avg_line_length,
 
