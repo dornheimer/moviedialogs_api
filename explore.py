@@ -1,5 +1,6 @@
 import argparse
 import os
+from operator import itemgetter
 import sys
 import textwrap
 from sqlalchemy import create_engine
@@ -12,14 +13,14 @@ def print_conversation(session, conversation_id, show_info=True):
     conv = session.query(Conversation).get(conversation_id)
     first_char = session.query(Character).get(conv.first_char_id)
     second_char = session.query(Character).get(conv.second_char_id)
-    lines = conv.lines
 
     if show_info:
         print(f"{conversation_id} - {conv.movie} ({conv.movie.id})")
-        print(f"{first_char}, {second_char} ({len(lines)} lines)")
+        print(f"{first_char}, {second_char} ({len(conv)} lines)")
+        print("avg line length: {:.2f}".format(*conversation_stats(conv)))
         print("*" * 20)
 
-    for line in reversed(lines):
+    for line in reversed(conv.lines):
         print_line(line)
 
 
@@ -37,10 +38,15 @@ def print_movie(session, movie_id, show_convs=False, to_file=False):
             f = open(f'conversations/{file_name}.txt', 'w')
         sys.stdout = f
 
+    stats = movie_stats(movie)
     print(f"{movie_id} {movie} [{', '.join(str_genres)}]")
-    print(f"Characters: {', '.join(str_characters)}")
+    print(f"Characters ({len(movie.characters)}): {', '.join(str_characters)}")
     print("# Conversations: {}, # Lines: {}".format(
         len(movie.conversations), len(movie.lines)))
+    print("avg lines per conv: {:.2f}, avg line length: {:.2f}, f gender ratio: {:.2f}".format(
+        *stats[:3]))
+    print("chars_avg_lines_per_conv: {:.2f}, chars_avg_line_length: {:.2f}".format(
+        *stats[3:]))
 
     if show_convs:
         convs = [str(conv.id) for conv in movie.conversations]
@@ -63,6 +69,8 @@ def print_character(session, character_id, show_convs=False, show_lines=False):
     print(f"Gender: {char.gender}, Credit position: {char.credit_pos}")
     print("# Conversations: {}, # Lines: {}".format(
         len(char.conversations), len(char.lines)))
+    print("avg lines per conv: {:.2f}, avg line length: {:.2f}".format(
+        *character_stats(char)))
 
     if show_convs:
         convs = [str(conv.id) for conv in char.conversations]
@@ -93,6 +101,38 @@ def print_line(line):
             print(wrapped_line)
 
 
+def avg(numbers):
+    return sum(numbers) / len(numbers)
+
+
+def character_stats(char):
+    lines_per_conv = len(char.lines) / len(char.conversations)
+    avg_line_length = avg([len(l) for l in char.lines])
+
+    return lines_per_conv, avg_line_length
+
+
+def movie_stats(movie):
+    lines_per_conv = len(movie.lines) / len(movie.conversations)
+    avg_line_length = avg([len(l) for l in movie.lines])
+
+    chars_stats = [character_stats(char) for char in movie.characters]
+    chars_avg_lines_per_conv = avg(list(map(itemgetter(0), chars_stats)))
+    chars_avg_line_length = avg(list(map(itemgetter(1), chars_stats)))
+
+    genders = [char.gender for char in movie.characters
+               if char.gender in ('f', 'm')]
+    f_gender_ratio = genders.count('f') / len(genders)
+
+    return lines_per_conv, avg_line_length, f_gender_ratio, chars_avg_lines_per_conv, chars_avg_line_length
+
+
+def conversation_stats(conv):
+    avg_line_length = avg([len(l) for l in conv.lines])
+
+    return avg_line_length,
+
+
 def parse_commandline():
     parser = argparse.ArgumentParser()
     parser.add_argument('--conversation', '-c', metavar='<conversation_id>')
@@ -115,7 +155,7 @@ def main(args):
         print_conversation(session, args.conversation)
     if args.movie:
         to_file = args.to_file
-        print_movie(session, args.movie, show_convs=True, to_file=to_file)
+        print_movie(session, args.movie, show_convs=False, to_file=to_file)
     if args.character:
         print_character(session, args.character, show_convs=True,
                         show_lines=True)
