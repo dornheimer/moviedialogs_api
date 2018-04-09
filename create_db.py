@@ -135,6 +135,35 @@ def insert_conversations(session):
     return line_to_conv_mapping
 
 
+def clean_records(session):
+    real_ids = {'u5784': 'u5783', 'u5786': 'u5785', 'u6564': 'u6563'}
+
+    for dup_char_id, real_char_id in real_ids.items():
+        dup_char = session.query(Character).get(dup_char_id)
+        real_char = session.query(Character).get(real_char_id)
+
+        char_movie = session.query(Movie).get(dup_char.movie_id)
+        char_movie.characters.remove(dup_char)
+
+        # Make sure there are no duplicate lines
+        char_lines = list(set(dup_char.lines + real_char.lines))
+        real_char.lines = char_lines
+
+        for conv in dup_char.conversations:
+            conv.characters.remove(dup_char)
+            conv.characters.append(real_char)
+            if dup_char_id == conv.first_char_id:
+                conv.first_char_id = real_char_id
+            else:
+                conv.second_char_id = real_char_id
+        char_conversations = list(
+            set(dup_char.conversations + real_char.conversations))
+        real_char.conversations = char_conversations
+
+        session.delete(dup_char)
+    session.commit()
+
+
 def main():
     engine = create_engine(database_uri)
 
@@ -147,6 +176,7 @@ def main():
     insert_characters(session)
     line_to_conv_mapping = insert_conversations(session)
     insert_lines(session, line_to_conv_mapping)
+    clean_records(session)
 
 
 if __name__ == '__main__':
