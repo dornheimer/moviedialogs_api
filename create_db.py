@@ -138,8 +138,7 @@ def insert_conversations(session):
 def clean_records(session):
     real_ids = {'u5784': 'u5783', 'u5786': 'u5785', 'u6564': 'u6563'}
 
-    for dup_char_id in ('u5784', 'u5786', 'u6564'):
-        real_char_id = real_ids[dup_char_id]
+    for dup_char_id, real_char_id in real_ids.items():
         dup_char = session.query(Character).get(dup_char_id)
         real_char = session.query(Character).get(real_char_id)
 
