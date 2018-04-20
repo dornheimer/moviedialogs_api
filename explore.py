@@ -5,10 +5,14 @@ from operator import itemgetter
 import sys
 import textwrap
 import re
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, or_, and_, exists
 from sqlalchemy.orm import sessionmaker
 from mappings import Conversation, Character, Movie, Genre, Line
 from create_db import database_uri
+
+
+class InvalidQueryError(Exception):
+    """Raise when the value does not exist in the queried table."""
 
 
 def separator(char='-', length=80):
@@ -166,6 +170,69 @@ def conversation_stats(conv):
     avg_line_length = avg([len(sanitize_html(l.text)) for l in conv.lines])
 
     return avg_line_length,
+
+
+def is_valid(session, field, value):
+    (ret, ), = session.query(exists().where(field == value))
+    return ret
+
+
+def filter_conversations(session, *, movie_id=None, first_char_id=None,
+                         second_char_id=None):
+    """Filter conversations by movie or character ID.
+
+    Character IDs take precedence over movie ID, as characters are already
+    associated with a specific movie.
+    """
+    if movie_id:
+        if not is_valid(session, Conversation.movie_id, movie_id):
+            raise InvalidQueryError(
+                f"movie with ID '{movie_id}' does not exist")
+    if first_char_id:
+        id_is_valid = (
+            is_valid(session, Conversation.first_char_id, first_char_id) or
+            is_valid(session, Conversation.second_char_id, first_char_id)
+        )
+        if not id_is_valid:
+            raise InvalidQueryError(
+                f"character with ID '{first_char_id}' does not exist")
+    if second_char_id:
+        id_is_valid = (
+            is_valid(session, Conversation.first_char_id, second_char_id) or
+            is_valid(session, Conversation.second_char_id, second_char_id)
+        )
+        if not id_is_valid:
+            raise InvalidQueryError(
+                f"character with ID '{second_char_id}' does not exist")
+
+    if not (second_char_id or first_char_id) and movie_id:
+        return session.query(Conversation).filter(
+            Conversation.movie_id == movie_id
+        ).all()
+
+    elif first_char_id and second_char_id:
+        return session.query(Conversation).filter(
+            and_(
+                Conversation.first_char_id.in_(
+                    [first_char_id, second_char_id]),
+                Conversation.second_char_id.in_(
+                    [first_char_id, second_char_id])
+            )
+        ).all()
+
+    elif first_char_id:
+        return session.query(Conversation).filter(
+            or_(Conversation.first_char_id == first_char_id,
+                Conversation.second_char_id == first_char_id)
+        ).all()
+
+    elif second_char_id:
+        return session.query(Conversation).filter(
+            or_(Conversation.first_char_id == second_char_id,
+                Conversation.second_char_id == second_char_id)
+        ).all()
+
+    return []
 
 
 def parse_commandline():
