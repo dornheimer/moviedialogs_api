@@ -11,12 +11,23 @@ from mappings import Conversation, Character, Movie, Genre, Line
 from create_db import database_uri
 
 
+def separator(char='-', length=80):
+    def decorate(func):
+        def separated(*args, **kwargs):
+            rv = func(*args, **kwargs)
+            print(char * length)
+            return rv
+        return separated
+    return decorate
+
+
 def sanitize_html(line_text):
     # Use capture groups to enumerate, and reference group 2 for substitution
     tag_regex = re.compile(r"(<\w+>(.+?)</\w+>)")
     return re.sub(tag_regex, r"\2", line_text)
 
 
+@separator()
 def print_conversation(session, conversation_id, show_info=True):
     conv = session.query(Conversation).get(conversation_id)
     first_char = session.query(Character).get(conv.first_char_id)
@@ -31,9 +42,8 @@ def print_conversation(session, conversation_id, show_info=True):
     for line in reversed(conv.lines):
         print_line(line)
 
-    print("-" * 80)
 
-
+@separator()
 def print_movie(session, movie_id, show_convs=False, to_file=False):
     movie = session.query(Movie).get(movie_id)
     str_genres = [str(genre) for genre in movie.genres]
@@ -65,8 +75,6 @@ def print_movie(session, movie_id, show_convs=False, to_file=False):
         convs = [str(conv.id) for conv in movie.conversations]
         print(", ".join(convs))
 
-    print("-" * 80)
-
     if to_file:
         print("")
         for conv in movie.conversations:
@@ -77,6 +85,7 @@ def print_movie(session, movie_id, show_convs=False, to_file=False):
         f.close()
 
 
+@separator()
 def print_character(session, character_id, show_convs=False, show_lines=False):
     char = session.query(Character).get(character_id)
 
@@ -95,9 +104,8 @@ def print_character(session, character_id, show_convs=False, show_lines=False):
         lines = [str(line.id) for line in char.lines]
         print(", ".join(lines))
 
-    print("-" * 80)
 
-
+@separator()
 def print_genre(session, genre_id, show_movies=False):
     genre = session.query(Genre).get(genre_id)
 
@@ -107,8 +115,6 @@ def print_genre(session, genre_id, show_movies=False):
     if show_movies:
         movies = [str(movie.id) for movie in genre.movies]
         print(", ".join(movies))
-
-    print("-" * 80)
 
 
 def print_line(line):
@@ -248,7 +254,6 @@ def main(args):
         if len(args.genre_id) > 1:
             for g_id in args.genre_id:
                 print_genre(session, g_id, show_movies=True)
-                print("-" * 80)
         else:
             start_id = args.genre_id[0]
             stop_id = start_id + args.range
