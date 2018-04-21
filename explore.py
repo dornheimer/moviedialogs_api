@@ -161,7 +161,10 @@ def movie_stats(movie):
 
     genders = [char.gender for char in movie.characters
                if char.gender in ('f', 'm')]
-    f_gender_ratio = genders.count('f') / len(genders)
+    try:
+        f_gender_ratio = genders.count('f') / len(genders)
+    except ZeroDivisionError:
+        f_gender_ratio = 0
 
     return MovieStats(lines_per_conv, avg_line_length, f_gender_ratio,
                       chars_avg_lines_per_conv, chars_avg_line_length)
