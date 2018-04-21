@@ -5,6 +5,7 @@ from operator import itemgetter
 import sys
 import textwrap
 import re
+import random as rd
 from sqlalchemy import create_engine, or_, and_, exists
 from sqlalchemy.orm import sessionmaker
 from mappings import Conversation, Character, Movie, Genre, Line
@@ -235,6 +236,49 @@ def filter_conversations(session, *, movie_id=None, first_char_id=None,
     return []
 
 
+def match_characters(session, character_id):
+    """Return a list of characters that have a conversation with
+    the character associated with the provided ID.
+    """
+    character = session.query(Character).get(character_id)
+    return list({char for conv in character.conversations
+                 for char in conv.characters
+                 if char != character})
+
+
+def interactive_query(session):
+    movie_id = input("Enter movie ID to display characters ")
+    print_movie(session, movie_id)
+    movie = session.query(Movie).get(movie_id)
+
+    selecting = True
+    while selecting:
+        print("Select from the list of characters."
+                " skipping selects a random conversation")
+        print("\n".join(f"[{i}] {c.name} ({c.id})"
+                        for i, c in enumerate(movie.characters)))
+        first_char_ind = input("select the first character ")
+        if first_char_ind == "":
+            conversation_id = rd.choice(movie.conversations).id
+        else:
+            first_char_id = movie.characters[int(first_char_ind)].id
+            matched_characters = match_characters(session, first_char_id)
+            print("\n".join(f"[{i}] {c.name} ({c.id})"
+                            for i, c in enumerate(matched_characters)))
+            second_char_ind = int(input("select the second character "))
+            second_char_id = matched_characters[second_char_ind].id
+            conversations = filter_conversations(session,
+                first_char_id=first_char_id,
+                second_char_id=second_char_id)
+            print("\n".join(f"[{i}] {conv.id}"
+                            for i, conv in enumerate(conversations)))
+            conversation_ind = int(input("select a conversation "))
+            conversation_id = conversations[conversation_ind].id
+
+        print_conversation(session, conversation_id)
+        selecting = (input("select another conversation? ") in ('y', 'yes'))
+
+
 def parse_commandline():
     parser = argparse.ArgumentParser()
 
@@ -272,6 +316,9 @@ def parse_commandline():
                         type=int,
                         default=1)
 
+    parser.add_argument('--interactive', '-i',
+                        action='store_true')
+
     return parser.parse_args()
 
 
@@ -280,6 +327,9 @@ def main(args):
 
     Session = sessionmaker(bind=engine)
     session = Session()
+
+    if args.interactive:
+        interactive_query(session)
 
     if args.conv_id:
         if len(args.conv_id) > 1:
