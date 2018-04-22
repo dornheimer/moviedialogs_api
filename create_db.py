@@ -4,7 +4,7 @@ import logging
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from mappings import Base, Movie, Genre, Character, Line, Conversation
+from models import Base, Movie, Genre, Character, Line, Conversation
 
 directory = os.path.abspath(os.path.dirname(__file__))
 database_uri = 'sqlite:///' + os.path.join(directory, 'movie_dialogs.sqlite')
