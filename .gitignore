@@ -107,3 +107,4 @@ corpus/
 *.db
 *.sqlite
 cornell_movie_dialogs_corpus.zip
+.vscode
