@@ -27,8 +27,8 @@ target_metadata = mappings.Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-import create_db
-config.set_main_option('sqlalchemy.url', create_db.database_uri)
+import seed
+config.set_main_option('sqlalchemy.url', seed.database_uri)
 
 
 def run_migrations_offline():
