@@ -210,30 +210,22 @@ def filter_conversations(session, *, movie_id=None, first_char_id=None,
                 f"character with ID '{second_char_id}' does not exist")
 
     if not (second_char_id or first_char_id) and movie_id:
-        return session.query(Conversation).filter(
-            Conversation.movie_id == movie_id
-        ).all()
+        return session.query(Conversation).filter_by(movie_id=movie_id).all()
 
     elif first_char_id and second_char_id:
         return session.query(Conversation).filter(
-            and_(
-                Conversation.first_char_id.in_(
-                    [first_char_id, second_char_id]),
-                Conversation.second_char_id.in_(
-                    [first_char_id, second_char_id])
-            )
+            and_(Conversation.first_char_id.in_([first_char_id, second_char_id]),
+                 Conversation.second_char_id.in_([first_char_id, second_char_id]))
         ).all()
 
     elif first_char_id:
-        return session.query(Conversation).filter(
-            or_(Conversation.first_char_id == first_char_id,
-                Conversation.second_char_id == first_char_id)
+        return session.query(Conversation).filter_by(
+            or_(first_char_id=first_char_id, second_char_id=first_char_id)
         ).all()
 
     elif second_char_id:
-        return session.query(Conversation).filter(
-            or_(Conversation.first_char_id == second_char_id,
-                Conversation.second_char_id == second_char_id)
+        return session.query(Conversation).filter_by(
+            or_(first_char_id=second_char_id, second_char_id=second_char_id)
         ).all()
 
     return []
