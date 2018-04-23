@@ -4,21 +4,33 @@ import logging
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from db.models import Base, Movie, Genre, Character, Line, Conversation
+from db.models import (
+    Character,
+    Conversation,
+    Genre,
+    Line,
+    Movie,
+)
 
-directory = os.path.abspath(os.getcwd())
-database_uri = 'sqlite:///' + os.path.join(directory, 'movie_dialogs.sqlite')
-# database_uri = 'postgresql://user:password@localhost:5432/database'
+DIRECTORY = os.path.abspath(os.getcwd())
+DATABASE_URI = 'sqlite:///' + os.path.join(DIRECTORY, 'movie_dialogs.sqlite')
+# DATABASE_URI = 'postgresql://user:password@localhost:5432/database'
 
+CORPUS_PATH = os.path.join(DIRECTORY, 'corpus')
+CHARACTERS_DATA = 'movie_characters_metadata.txt'
+CONVERSATION_DATA = 'movie_conversations.txt'
+LINE_DATA = 'movie_lines.txt'
+MOVIE_DATA = 'movie_titles_metadata.txt'
 
 def get_data(path):
-    with open(path, encoding='latin-1') as f:
+    with open(os.path.join(CORPUS_PATH, path), encoding='latin-1') as f:
         for line in f:
             yield line
 
 
 def process_line(line):
-    split_line = line.split(' +++$+++ ')
+    delimiter = ' +++$+++ '
+    split_line = line.split(delimiter)
     split_line[-1] = split_line[-1][:-1]  # Remove newline char
     split_line = [(None if item == '?' else item) for item in split_line]
     if split_line[-1] is None:
@@ -37,13 +49,10 @@ def prepare_data(path, table_fields):
 
 def insert_movies(session):
     logging.info("inserting movies ...")
+    data_stream = prepare_data(MOVIE_DATA, Movie.file_mapping)
 
-    table_fields = [c.name for c in Movie.__table__.columns]
-    data_stream = prepare_data('corpus/movie_titles_metadata.txt',
-                               table_fields)
     for count, data in enumerate(data_stream, 1):
         title_data, genres = data
-
         title = Movie(**title_data)
 
         for g in genres:
@@ -52,7 +61,6 @@ def insert_movies(session):
             if g_obj is None:
                 g_obj = Genre(name=g)
                 session.add(g_obj)
-
             title.genres.append(g_obj)
 
         session.add(title)
@@ -63,24 +71,21 @@ def insert_movies(session):
 
 def insert_characters(session):
     logging.info("inserting characters ...")
+    data_stream = prepare_data(CHARACTERS_DATA, Character.file_mapping)
 
-    table_fields = [c.name for c in Character.__table__.columns]
-    data_stream = prepare_data('corpus/movie_characters_metadata.txt',
-                               table_fields)
     for count, data in enumerate(data_stream, 1):
         character_data, _ = data
-
         character = Character(**character_data)
         session.add(character)
+
     session.commit()
     logging.info("inserted %s characters", count)
 
 
 def insert_lines(session, line_to_conv_mapping):
     logging.info("inserting lines ...")
+    data_stream = prepare_data(LINE_DATA, Line.file_mapping)
 
-    table_fields = [c.name for c in Line.__table__.columns]
-    data_stream = prepare_data('corpus/movie_lines.txt', table_fields)
     for count, data in enumerate(data_stream, 1):
         line_data, _ = data
         conv_id = line_to_conv_mapping[line_data['id']]
@@ -96,11 +101,7 @@ def insert_lines(session, line_to_conv_mapping):
 
 def insert_conversations(session):
     logging.info("inserting conversations ...")
-
-    # Omit id field since it is automatically generated
-    table_fields = [c.name for c in Conversation.__table__.columns
-                    if c.name != 'id']
-    data_stream = prepare_data('corpus/movie_conversations.txt', table_fields)
+    data_stream = prepare_data(CONVERSATION_DATA, Conversation.file_mapping)
 
     # 'load' characters into session identity map to make lookup with get()
     # faster. session should usually not be used for caching, but it works here
@@ -131,7 +132,6 @@ def insert_conversations(session):
     session.commit()
     print("")
     logging.info("inserted %s conversations", conv_id)
-
     return line_to_conv_mapping
 
 
@@ -165,12 +165,9 @@ def clean_records(session):
 
 
 def main():
-    engine = create_engine(database_uri)
-
+    engine = create_engine(DATABASE_URI)
     Session = sessionmaker(bind=engine)
     session = Session()
-
-    # Base.metadata.create_all(engine)
 
     insert_movies(session)
     insert_characters(session)
@@ -180,7 +177,5 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='[%(levelname)s] %(message)s',
-                        level=logging.INFO)
-
+    logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.INFO)
     main()
