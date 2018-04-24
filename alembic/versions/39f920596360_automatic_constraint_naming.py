@@ -1,8 +1,8 @@
-"""postgresql compatibility
+"""automatic constraint naming
 
-Revision ID: c84223bfcf37
+Revision ID: 39f920596360
 Revises: 
-Create Date: 2018-03-26 18:59:08.816631
+Create Date: 2018-04-24 19:06:58.152571
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'c84223bfcf37'
+revision = '39f920596360'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,62 +21,62 @@ def upgrade():
     op.create_table('genres',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_genres'))
     )
     op.create_index(op.f('ix_genres_name'), 'genres', ['name'], unique=False)
     op.create_table('movies',
     sa.Column('id', sa.String(), nullable=False),
-    sa.Column('title', sa.String(), nullable=True),
-    sa.Column('year', sa.String(), nullable=True),
     sa.Column('imdb_rating', sa.Float(), nullable=True),
     sa.Column('num_imdb_votes', sa.Integer(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('title', sa.String(), nullable=True),
+    sa.Column('year', sa.String(), nullable=True),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_movies'))
     )
     op.create_index('movie_ix', 'movies', ['id', 'title'], unique=True)
     op.create_table('characters',
     sa.Column('id', sa.String(), nullable=False),
-    sa.Column('name', sa.String(), nullable=True),
+    sa.Column('credit_pos', sa.Integer(), nullable=True),
+    sa.Column('gender', sa.String(), nullable=True),
     sa.Column('movie_id', sa.String(), nullable=True),
     sa.Column('movie_title', sa.String(), nullable=True),
-    sa.Column('gender', sa.String(), nullable=True),
-    sa.Column('credit_pos', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['movie_id', 'movie_title'], ['movies.id', 'movies.title'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('name', sa.String(), nullable=True),
+    sa.ForeignKeyConstraint(['movie_id', 'movie_title'], ['movies.id', 'movies.title'], name=op.f('fk_characters_movie_id_movies')),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_characters'))
     )
     op.create_index('character_ix', 'characters', ['id', 'name'], unique=True)
     op.create_table('movie_genres',
     sa.Column('movie_id', sa.String(), nullable=True),
     sa.Column('genre_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['genre_id'], ['genres.id'], ),
-    sa.ForeignKeyConstraint(['movie_id'], ['movies.id'], )
+    sa.ForeignKeyConstraint(['genre_id'], ['genres.id'], name=op.f('fk_movie_genres_genre_id_genres')),
+    sa.ForeignKeyConstraint(['movie_id'], ['movies.id'], name=op.f('fk_movie_genres_movie_id_movies'))
     )
     op.create_table('conversations',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('first_char_id', sa.String(), nullable=True),
     sa.Column('second_char_id', sa.String(), nullable=True),
     sa.Column('movie_id', sa.String(), nullable=True),
-    sa.ForeignKeyConstraint(['first_char_id'], ['characters.id'], ),
-    sa.ForeignKeyConstraint(['movie_id'], ['movies.id'], ),
-    sa.ForeignKeyConstraint(['second_char_id'], ['characters.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.ForeignKeyConstraint(['first_char_id'], ['characters.id'], name=op.f('fk_conversations_first_char_id_characters'), onupdate='CASCADE', ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['movie_id'], ['movies.id'], name=op.f('fk_conversations_movie_id_movies')),
+    sa.ForeignKeyConstraint(['second_char_id'], ['characters.id'], name=op.f('fk_conversations_second_char_id_characters'), onupdate='CASCADE', ondelete='SET NULL'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_conversations'))
     )
     op.create_table('convs_chars',
     sa.Column('conversation_id', sa.Integer(), nullable=True),
     sa.Column('character_id', sa.String(), nullable=True),
-    sa.ForeignKeyConstraint(['character_id'], ['characters.id'], ),
-    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.id'], )
+    sa.ForeignKeyConstraint(['character_id'], ['characters.id'], name=op.f('fk_convs_chars_character_id_characters'), onupdate='CASCADE', ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.id'], name=op.f('fk_convs_chars_conversation_id_conversations'), onupdate='CASCADE', ondelete='SET NULL')
     )
     op.create_table('lines',
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('character_id', sa.String(), nullable=True),
-    sa.Column('movie_id', sa.String(), nullable=True),
     sa.Column('character_name', sa.String(), nullable=True),
-    sa.Column('text', sa.String(), nullable=True),
     sa.Column('conversation_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['character_id', 'character_name'], ['characters.id', 'characters.name'], ),
-    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.id'], ),
-    sa.ForeignKeyConstraint(['movie_id'], ['movies.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('movie_id', sa.String(), nullable=True),
+    sa.Column('text', sa.String(), nullable=True),
+    sa.ForeignKeyConstraint(['character_id', 'character_name'], ['characters.id', 'characters.name'], name=op.f('fk_lines_character_id_characters')),
+    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.id'], name=op.f('fk_lines_conversation_id_conversations')),
+    sa.ForeignKeyConstraint(['movie_id'], ['movies.id'], name=op.f('fk_lines_movie_id_movies')),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_lines'))
     )
     op.create_index(op.f('ix_lines_id'), 'lines', ['id'], unique=False)
     # ### end Alembic commands ###
