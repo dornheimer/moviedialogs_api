@@ -16,8 +16,14 @@ Base = declarative_base()
 convs_chars = Table(
     'convs_chars',
     Base.metadata,
-    Column('conversation_id', Integer, ForeignKey('conversations.id')),
-    Column('character_id', String, ForeignKey('characters.id'))
+    Column('conversation_id', Integer, ForeignKey(
+        'conversations.id', onupdate='CASCADE', ondelete='SET NULL'
+        )
+    ),
+    Column('character_id', String, ForeignKey(
+        'characters.id', onupdate='CASCADE', ondelete='SET NULL'
+        )
+    )
 )
 
 movies_genres = Table(
@@ -140,9 +146,15 @@ class Conversation(Base):
     __tablename__ = 'conversations'
     id = Column(Integer, primary_key=True)
 
-    first_char_id = Column(String, ForeignKey('characters.id'))
+    first_char_id = Column(String, ForeignKey(
+        'characters.id', onupdate='CASCADE', ondelete='SET NULL'
+        )
+    )
+    second_char_id = Column(String, ForeignKey(
+        'characters.id', onupdate='CASCADE', ondelete='SET NULL'
+        )
+    )
     movie_id = Column(String, ForeignKey('movies.id'))
-    second_char_id = Column(String, ForeignKey('characters.id'))
 
     characters = relationship('Character', secondary=convs_chars, back_populates='conversations')
     lines = relationship('Line', back_populates='conversation')
