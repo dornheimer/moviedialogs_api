@@ -1,0 +1,11 @@
+[MESSAGES CONTROL]
+
+disable=
+    invalid-name,
+    missing-docstring,
+    too-few-public-methods,
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length=100
+

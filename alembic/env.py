@@ -20,16 +20,15 @@ fileConfig(config.config_file_name)
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-import mappings
-target_metadata = mappings.Base.metadata
+from db import models
+target_metadata = models.Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-import create_db
-config.set_main_option('sqlalchemy.url', create_db.database_uri)
-
+from db import seed
+config.set_main_option('sqlalchemy.url', seed.DATABASE_URI)
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
