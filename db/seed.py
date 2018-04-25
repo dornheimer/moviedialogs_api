@@ -22,6 +22,7 @@ CONVERSATION_DATA = 'movie_conversations.txt'
 LINE_DATA = 'movie_lines.txt'
 MOVIE_DATA = 'movie_titles_metadata.txt'
 
+
 def get_data(path):
     with open(os.path.join(CORPUS_PATH, path), encoding='latin-1') as f:
         for line in f:
@@ -142,23 +143,22 @@ def clean_records(session):
         dup_char = session.query(Character).get(dup_char_id)
         real_char = session.query(Character).get(real_char_id)
 
-        char_movie = session.query(Movie).get(dup_char.movie_id)
-        char_movie.characters.remove(dup_char)
+        for line in dup_char.lines:
+            # Delay autoflush to prevent violating foreign key constraint
+            with session.no_autoflush:
+                line.character_id = real_char.id
+                line.character_name = real_char.name
 
-        # Make sure there are no duplicate lines
-        char_lines = list(set(dup_char.lines + real_char.lines))
-        real_char.lines = char_lines
+        # Commit to make new character assignment persistent
+        session.commit()
 
         for conv in dup_char.conversations:
-            conv.characters.remove(dup_char)
-            conv.characters.append(real_char)
             if dup_char_id == conv.first_char_id:
                 conv.first_char_id = real_char_id
             else:
                 conv.second_char_id = real_char_id
-        char_conversations = list(
-            set(dup_char.conversations + real_char.conversations))
-        real_char.conversations = char_conversations
+
+            real_char.conversations.append(conv)
 
         session.delete(dup_char)
     session.commit()
