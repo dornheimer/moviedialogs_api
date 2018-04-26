@@ -169,11 +169,17 @@ def main():
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    insert_movies(session)
-    insert_characters(session)
-    line_to_conv_mapping = insert_conversations(session)
-    insert_lines(session, line_to_conv_mapping)
-    clean_records(session)
+    try:
+        insert_movies(session)
+        insert_characters(session)
+        line_to_conv_mapping = insert_conversations(session)
+        insert_lines(session, line_to_conv_mapping)
+        clean_records(session)
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 if __name__ == '__main__':
