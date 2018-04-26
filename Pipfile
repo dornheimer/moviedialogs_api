@@ -4,9 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-alembic = "==0.9.8"
-"psycopg2" = "==2.7.4"
-SQLAlchemy = "==1.2.5"
+alembic = "*"
+"psycopg2" = "*"
+SQLAlchemy = "*"
 flask = "*"
 flask-sqlalchemy = "*"
 flask-migrate = "*"
