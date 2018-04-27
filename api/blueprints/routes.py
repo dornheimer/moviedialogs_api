@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, request, jsonify
 from sqlalchemy import inspect
 from db.models import (
     Character,
@@ -56,3 +56,19 @@ def get_movie(movie_id):
     }
     data.update(related_data)
     return jsonify({'movie': data})
+
+
+@bp.route('/moviedb/api/v0.1/movies', methods=['GET'])
+def get_movies():
+    page = request.args.get('page', 1, type=int)
+    movies = Movie.query.paginate(page, per_page=10).items
+    movies_data = {}
+    for m in movies:
+        data = object_as_dict(m)
+        related_data = {
+            'characters': [char.id for char in m.characters],
+            'genres': [g.name for g in m.genres],
+        }
+        data.update(related_data)
+        movies_data[m.id] = data
+    return jsonify({'movies': movies_data})
