@@ -11,3 +11,10 @@ class Config:
         'DATABASE_URI', 'sqlite:///' + os.path.join(APP_DIR, 'movie_dialogs.sqlite')
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    DEBUG = False
+    TESTING = False
+
+
+class TestConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite://'  # Use in-memory database
