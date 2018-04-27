@@ -11,6 +11,7 @@ flask = "*"
 flask-sqlalchemy = "*"
 flask-migrate = "*"
 "e1839a8" = {path = ".", editable = true}
+python-dotenv = "*"
 
 [dev-packages]
 pylint = "*"
