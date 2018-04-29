@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
+API_BASE_PATH ='/api'
 load_dotenv(os.path.join(APP_DIR, '.env'))
 
 

@@ -17,10 +17,10 @@
 
 |Method | URL | Action |
 |-------|-----|--------|
-|GET    | /moviedb/api/characters/[string:character_id] | Retrieve a character |
-|GET    | /moviedb/api/conversations/[int:conversation_id] | Retrieve a conversation |
-|GET    | /moviedb/api/genres/[int:genre_id] | Retrieve a genre |
-|GET    | /moviedb/api/lines/[string:line_id] | Retrieve a line |
-|GET    | /moviedb/api/movies/[string:movie_id] | Retrieve a movie |
+|GET    | /api/characters/[string:character_id] | Retrieve a character |
+|GET    | /api/conversations/[int:conversation_id] | Retrieve a conversation |
+|GET    | /api/genres/[int:genre_id] | Retrieve a genre |
+|GET    | /api/lines/[string:line_id] | Retrieve a line |
+|GET    | /api/movies/[string:movie_id] | Retrieve a movie |
 
 Movie data includes character and conversation IDs

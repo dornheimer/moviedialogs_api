@@ -2,7 +2,7 @@ import json
 import unittest
 from api import fdb
 from api.factory import create_app
-from config import TestConfig
+from config import TestConfig, API_BASE_PATH
 from db.models import Movie
 
 MOVIE_DATA = {
@@ -53,13 +53,13 @@ class RoutesTestCase(unittest.TestCase):
 
     def test_get_movie_id(self):
         expected = add_movies()
-        response = self.client.get('/moviedb/api/movies/0')
+        response = self.client.get(f'{API_BASE_PATH}/movies/0')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.get_data()), {'movie': expected})
 
     def test_get_movies_pagination(self):
         expected = add_movies(11)
-        response = self.client.get('/moviedb/api/movies')
+        response = self.client.get(f'{API_BASE_PATH}/movies')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             json.loads(response.get_data()),
