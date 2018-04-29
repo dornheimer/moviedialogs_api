@@ -53,13 +53,13 @@ class RoutesTestCase(unittest.TestCase):
 
     def test_get_movie_id(self):
         expected = add_movies()
-        response = self.client.get('/moviedb/api/v0.1/movies/0')
+        response = self.client.get('/moviedb/api/movies/0')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.get_data()), {'movie': expected})
 
     def test_get_movies_pagination(self):
         expected = add_movies(11)
-        response = self.client.get('/moviedb/api/v0.1/movies')
+        response = self.client.get('/moviedb/api/movies')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             json.loads(response.get_data()),
