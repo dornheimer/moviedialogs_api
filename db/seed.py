@@ -2,7 +2,7 @@
 import ast
 import logging
 import os
-from config import APP_DIR, Config
+from config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from db.models import (
@@ -14,8 +14,9 @@ from db.models import (
 )
 
 DATABASE_URI = Config.SQLALCHEMY_DATABASE_URI
+DIRECTORY = os.path.abspath(os.getcwd())
 
-CORPUS_PATH = os.path.join(APP_DIR, 'corpus')
+CORPUS_PATH = os.path.join(DIRECTORY, 'corpus')
 CHARACTERS_DATA = 'movie_characters_metadata.txt'
 CONVERSATION_DATA = 'movie_conversations.txt'
 LINE_DATA = 'movie_lines.txt'
