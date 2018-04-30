@@ -2,6 +2,7 @@
 import ast
 import logging
 import os
+from config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from db.models import (
@@ -12,9 +13,8 @@ from db.models import (
     Movie,
 )
 
+DATABASE_URI = Config.SQLALCHEMY_DATABASE_URI
 DIRECTORY = os.path.abspath(os.getcwd())
-DATABASE_URI = 'sqlite:///' + os.path.join(DIRECTORY, 'movie_dialogs.sqlite')
-# DATABASE_URI = 'postgresql://user:password@localhost:5432/database'
 
 CORPUS_PATH = os.path.join(DIRECTORY, 'corpus')
 CHARACTERS_DATA = 'movie_characters_metadata.txt'
