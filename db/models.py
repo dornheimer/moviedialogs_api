@@ -10,14 +10,30 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.schema import MetaData
 
-Base = declarative_base()
+metadata = MetaData(
+    naming_convention={
+        'ix': 'ix_%(column_0_label)s',
+        'uq': 'uq_%(table_name)s_%(column_0_name)s',
+        'ck': 'ck_%(table_name)s_%(constraint_name)s',
+        'fk': 'fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s',
+        'pk': 'pk_%(table_name)s'
+    }
+)
+Base = declarative_base(metadata=metadata)
 
 convs_chars = Table(
     'convs_chars',
     Base.metadata,
-    Column('conversation_id', Integer, ForeignKey('conversations.id')),
-    Column('character_id', String, ForeignKey('characters.id'))
+    Column('conversation_id', Integer, ForeignKey(
+        'conversations.id', onupdate='CASCADE', ondelete='SET NULL'
+        )
+    ),
+    Column('character_id', String, ForeignKey(
+        'characters.id', onupdate='CASCADE', ondelete='SET NULL'
+        )
+    )
 )
 
 movies_genres = Table(
@@ -37,7 +53,7 @@ class Movie(Base):
     title = Column(String)
     year = Column(String)
 
-    __table_args__ = (Index('movie_ix', 'id', 'title', unique=True), {})
+    __table_args__ = (Index('ix_movies_id_movie_title', 'id', 'title', unique=True), {})
 
     characters = relationship('Character', back_populates='movie')
     conversations = relationship('Conversation', back_populates='movie')
@@ -60,7 +76,7 @@ class Genre(Base):
     __tablename__ = 'genres'
     id = Column(Integer, primary_key=True)
 
-    name = Column(String, index=True)
+    name = Column(String)
 
     movies = relationship('Movie', secondary=movies_genres, back_populates='genres')
 
@@ -80,7 +96,7 @@ class Character(Base):
 
     __table_args__ = (
         ForeignKeyConstraint([movie_id, movie_title], [Movie.id, Movie.title]),
-        Index('character_ix', 'id', 'name', unique=True),
+        Index('ix_character_id_character_name', 'id', 'name', unique=True),
         {}
     )
 
@@ -107,7 +123,7 @@ class Character(Base):
 
 class Line(Base):
     __tablename__ = 'lines'
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String, primary_key=True)
 
     character_id = Column(String)
     character_name = Column(String)
@@ -140,9 +156,15 @@ class Conversation(Base):
     __tablename__ = 'conversations'
     id = Column(Integer, primary_key=True)
 
-    first_char_id = Column(String, ForeignKey('characters.id'))
+    first_char_id = Column(
+        String,
+        ForeignKey('characters.id', onupdate='CASCADE', ondelete='SET NULL')
+    )
+    second_char_id = Column(
+        String,
+        ForeignKey('characters.id', onupdate='CASCADE', ondelete='SET NULL')
+    )
     movie_id = Column(String, ForeignKey('movies.id'))
-    second_char_id = Column(String, ForeignKey('characters.id'))
 
     characters = relationship('Character', secondary=convs_chars, back_populates='conversations')
     lines = relationship('Line', back_populates='conversation')
