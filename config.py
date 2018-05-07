@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-API_BASE_PATH ='/api'
+API_BASE_PATH = '/api'
 load_dotenv('.env')
 
 
