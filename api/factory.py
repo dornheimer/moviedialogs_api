@@ -1,5 +1,6 @@
 from flask import Flask
 from werkzeug.utils import find_modules, import_string
+
 from api import fdb, migrate
 
 

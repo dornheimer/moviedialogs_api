@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
-from config import API_BASE_PATH
 from sqlalchemy import inspect
+
+from config import API_BASE_PATH
 from db.models import (
     Character,
     Conversation,
@@ -8,7 +9,6 @@ from db.models import (
     Line,
     Movie,
 )
-
 
 bp = Blueprint('routes', __name__)
 

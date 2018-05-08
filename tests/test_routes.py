@@ -1,8 +1,9 @@
 import json
 import unittest
+
 from api import fdb
 from api.factory import create_app
-from config import TestingConfig, API_BASE_PATH
+from config import API_BASE_PATH, TestingConfig
 from db.models import Movie
 
 MOVIE_DATA = {
