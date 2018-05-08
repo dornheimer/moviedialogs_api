@@ -13,6 +13,6 @@ class Config:
     TESTING = False
 
 
-class TestConfig(Config):
+class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite://'  # Use in-memory database
