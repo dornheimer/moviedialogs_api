@@ -1,13 +1,18 @@
 language: python
+cache: pip
 python:
   - "3.6"
   - "3.7-dev"
 env:
   global:
     - PIPENV_IGNORE_VIRTUALENVS=1
+    - PG_DATABASE_URI="postgresql://postgres@localhost/travis_ci_test"
+services:
+  - postgresql
 # command to install dependencies
 install: "make"
 # command to run tests
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
 script:
     - make test
-cache: pip
