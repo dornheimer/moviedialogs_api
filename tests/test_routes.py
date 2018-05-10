@@ -1,8 +1,9 @@
 import json
 import unittest
+
 from api import fdb
 from api.factory import create_app
-from config import TestConfig, API_BASE_PATH
+from config import API_BASE_PATH, TestingConfig
 from db.models import Movie
 
 MOVIE_DATA = {
@@ -38,7 +39,7 @@ def add_movies(n=1):
 class RoutesTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.app = create_app(config=TestConfig)
+        self.app = create_app(config=TestingConfig)
         self.client = self.app.test_client()
 
         # Set up application context for the database

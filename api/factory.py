@@ -1,6 +1,7 @@
 from flask import Flask
 from werkzeug.utils import find_modules, import_string
-from api import fdb, migrate
+
+from api import fdb, migrate # pylint: disable=cyclic-import
 
 
 def create_app(config):

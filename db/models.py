@@ -26,13 +26,15 @@ Base = declarative_base(metadata=metadata)
 convs_chars = Table(
     'convs_chars',
     Base.metadata,
-    Column('conversation_id', Integer, ForeignKey(
-        'conversations.id', onupdate='CASCADE', ondelete='SET NULL'
-        )
+    Column(
+        'conversation_id',
+        Integer,
+        ForeignKey('conversations.id', onupdate='CASCADE', ondelete='SET NULL')
     ),
-    Column('character_id', String, ForeignKey(
-        'characters.id', onupdate='CASCADE', ondelete='SET NULL'
-        )
+    Column(
+        'character_id',
+        String,
+        ForeignKey('characters.id', onupdate='CASCADE', ondelete='SET NULL')
     )
 )
 

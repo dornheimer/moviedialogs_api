@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-API_BASE_PATH ='/api'
+API_BASE_PATH = '/api'
 load_dotenv('.env')
 
 
@@ -13,6 +13,6 @@ class Config:
     TESTING = False
 
 
-class TestConfig(Config):
+class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite://'  # Use in-memory database

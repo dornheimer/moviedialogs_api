@@ -2,9 +2,10 @@
 import ast
 import logging
 import os
-from config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from config import Config
 from db.models import (
     Character,
     Conversation,
@@ -67,7 +68,7 @@ def insert_movies(session):
         session.add(title)
 
     session.commit()
-    logging.info("inserted %s movies", count)
+    logging.info("inserted %s movies", count) # pylint: disable=undefined-loop-variable
 
 
 def insert_characters(session):
@@ -80,7 +81,7 @@ def insert_characters(session):
         session.add(character)
 
     session.commit()
-    logging.info("inserted %s characters", count)
+    logging.info("inserted %s characters", count) # pylint: disable=undefined-loop-variable
 
 
 def insert_lines(session, line_to_conv_mapping):
@@ -97,7 +98,7 @@ def insert_lines(session, line_to_conv_mapping):
 
     session.commit()
     print("")
-    logging.info("inserted %s lines", count)
+    logging.info("inserted %s lines", count) # pylint: disable=undefined-loop-variable
 
 
 def insert_conversations(session):
@@ -132,7 +133,7 @@ def insert_conversations(session):
 
     session.commit()
     print("")
-    logging.info("inserted %s conversations", conv_id)
+    logging.info("inserted %s conversations", conv_id) # pylint: disable=undefined-loop-variable
     return line_to_conv_mapping
 
 
