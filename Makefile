@@ -6,4 +6,4 @@ test:
 	pipenv run python -m unittest discover
 
 lint:
-	pipenv run pylint api db
+	-pipenv run pylint api db
