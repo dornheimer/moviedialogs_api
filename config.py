@@ -15,4 +15,4 @@ class Config:
 
 class TestingConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.getenv('PG_DATABASE_URI', 'sqlite://')  # Use in-memory database
+    SQLALCHEMY_DATABASE_URI = os.getenv('TEST_DATABASE_URI', 'sqlite://')  # Use SQLite as fallback
