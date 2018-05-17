@@ -15,6 +15,9 @@ class ESClient:
     def create_index(self, model):
         self.client.indices.create(index=model.__tablename__, body=self.settings)
 
+    def delete_index(self, model):
+        self.client.indices.delete(index=model.__tablename__)
+
     def query_index(self, index, query, page, per_page):
         if self.client is None:
             return [], 0
