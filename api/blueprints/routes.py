@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, url_for
+from flask import Blueprint, current_app, request, jsonify, url_for
 from sqlalchemy import inspect
 
 from config import API_BASE_PATH
@@ -96,3 +96,15 @@ def get_movies():
         links['prev'] = url_for('.get_movies', limit=limit, start=prev)
 
     return jsonify({'results': movies_data, 'meta': meta_data, 'links': links})
+
+
+@bp.route('/search', methods=['GET'])
+def search_movies():
+    es_client = current_app.elasticsearch
+    es_client.initialize_model(Movie)
+    page = request.args.get('page', 1, type=int)
+    query = request.args.get('query', None, type=str)
+    if query is not None:
+        query, total = es_client.search(Movie, query, page, per_page=10)
+        movies_data = {m.id: object_as_dict(m) for m in query}
+        return jsonify({'movies': movies_data})
