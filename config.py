@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 
+APP_DIR = os.path.abspath(os.path.dirname(__file__))
 API_BASE_PATH = '/api'
 load_dotenv('.env')
 
@@ -12,7 +13,7 @@ class Config:
     DEBUG = False
     TESTING = False
     ELASTICSEARCH_URL = os.getenv('ELASTICSEARCH_URL')
-    ELASTICSEARCH_SETTINGS = '/home/iiu/python/populate_db/db/mapping.json'
+    ELASTICSEARCH_SETTINGS = os.path.join(APP_DIR, 'db/search/mapping.json')
 
 
 class TestingConfig(Config):
