@@ -1,4 +1,6 @@
 import json
+import time
+
 from sqlalchemy import case
 from elasticsearch.helpers import bulk
 
@@ -12,8 +14,17 @@ class ESClient:
         with open(settings_json) as f:
             return json.load(f)
 
+    def initialize_model(self, model):
+        if not self.index_exists(model):
+            self.build_search_index(model)
+            # Sleep to make index searchable
+            time.sleep(1)
+
     def create_index(self, model):
         self.client.indices.create(index=model.__tablename__, body=self.settings)
+
+    def index_exists(self, model):
+        return self.client.indices.exists(model.__tablename__)
 
     def delete_index(self, model):
         self.client.indices.delete(index=model.__tablename__)
@@ -36,7 +47,6 @@ class ESClient:
             doc_type=index,
             body=body
         )
-        print(search)
         ids = [hit['_id'] for hit in search['hits']['hits']]
         return ids, search['hits']['total']
 
