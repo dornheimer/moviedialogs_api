@@ -2,14 +2,14 @@
   "settings": {
     "analysis": {
       "analyzer": {
-        "ngram_analyzer": {
+        "edge_ngram_analyzer": {
           "type": "custom",
-          "tokenizer": "ngram_tokenizer"
+          "tokenizer": "edge_ngram_tokenizer"
         }
       },
       "tokenizer": {
-        "ngram_tokenizer": {
-          "type": "ngram",
+        "edge_ngram_tokenizer": {
+          "type": "edge_ngram",
           "min_gram": 3,
           "max_gram": 3,
           "token_chars": [
@@ -24,7 +24,7 @@
   "mappings": {
     "movies": {
       "properties": {
-        "title": {"type": "text", "analyzer": "ngram_analyzer"}
+        "title": {"type": "text", "analyzer": "edge_ngram_analyzer"}
       }
     }
   }
