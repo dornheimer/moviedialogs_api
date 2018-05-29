@@ -16,11 +16,14 @@ install project dependencies:
 
 create `.env` with commands or run manually:
 
-    export DATABASE_URI=<dialect://user:password@host/dbname>
+    export DATABASE_URI=<postgresql://user:password@host/dbname>
     export FLASK_APP=api
 
     # enable development environment with debug mode
     export FLASK_ENV=development
+
+    # enable Elasticsearch
+    export ELASTICSEARCH_URL="http://localhost:9200"
 
 download corpus data and set up the database:
 
