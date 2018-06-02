@@ -84,4 +84,11 @@ def get_movies():
         'total_pages': paginated.pages,
         'total_items': paginated.total
     }
-    return jsonify({'movies': movies_data, 'meta': meta_data})
+
+    links = {}
+    if paginated.has_next:
+        links['next'] = f'{API_BASE_PATH}/movies?limit={limit}&start={start+limit}'
+    if paginated.has_prev:
+        links['prev'] = f'{API_BASE_PATH}/movies?limit={limit}&start={start-limit}'
+
+    return jsonify({'movies': movies_data, 'meta': meta_data, 'links': links})
