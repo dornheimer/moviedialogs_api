@@ -61,8 +61,12 @@ def get_movie(movie_id):
 
 @bp.route(f'{API_BASE_PATH}/movies', methods=['GET'])
 def get_movies():
-    page = request.args.get('page', 1, type=int)
-    movies = Movie.query.paginate(page, per_page=10).items
+    limit = request.args.get('limit', 5, type=int)
+    start = request.args.get('start', 0, type=int)
+    page_number = int(start / limit) + 1
+    paginated = Movie.query.paginate(page=page_number, per_page=limit)
+
+    movies = paginated.items
     movies_data = {}
     for m in movies:
         data = object_as_dict(m)
