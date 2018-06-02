@@ -76,4 +76,12 @@ def get_movies():
         }
         data.update(related_data)
         movies_data[m.id] = data
-    return jsonify({'movies': movies_data})
+
+    meta_data = {
+        'page': page_number,
+        'start': start,
+        'limit': limit,
+        'total_pages': paginated.pages,
+        'total_items': paginated.total
+    }
+    return jsonify({'movies': movies_data, 'meta': meta_data})
