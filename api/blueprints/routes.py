@@ -26,25 +26,25 @@ def object_as_dict(obj):
 @bp.route(f'{API_BASE_PATH}/characters/<string:character_id>', methods=['GET'])
 def get_character(character_id):
     character = Character.query.get_or_404(character_id)
-    return jsonify({'character': object_as_dict(character)})
+    return jsonify(object_as_dict(character))
 
 
 @bp.route(f'{API_BASE_PATH}/conversations/<int:conversation_id>', methods=['GET'])
 def get_conversation(conversation_id):
     conversation = Conversation.query.get_or_404(conversation_id)
-    return jsonify({'conversation': object_as_dict(conversation)})
+    return jsonify(object_as_dict(conversation))
 
 
 @bp.route(f'{API_BASE_PATH}/genres/<int:genre_id>', methods=['GET'])
 def get_genre(genre_id):
     genre = Genre.query.get_or_404(genre_id)
-    return jsonify({'genre': object_as_dict(genre)})
+    return jsonify(object_as_dict(genre))
 
 
 @bp.route(f'{API_BASE_PATH}/lines/<string:line_id>', methods=['GET'])
 def get_line(line_id):
     line = Line.query.get_or_404(line_id)
-    return jsonify({'line': object_as_dict(line)})
+    return jsonify(object_as_dict(line))
 
 
 @bp.route(f'{API_BASE_PATH}/movies/<string:movie_id>', methods=['GET'])
@@ -56,7 +56,7 @@ def get_movie(movie_id):
         'genres': [g.name for g in movie.genres],
     }
     data.update(related_data)
-    return jsonify({'movie': data})
+    return jsonify(data)
 
 
 @bp.route(f'{API_BASE_PATH}/movies', methods=['GET'])
@@ -67,7 +67,7 @@ def get_movies():
     paginated = Movie.query.paginate(page=page_number, per_page=limit)
 
     movies = paginated.items
-    movies_data = {}
+    movies_data = []
     for m in movies:
         data = object_as_dict(m)
         related_data = {
@@ -75,7 +75,7 @@ def get_movies():
             'genres': [g.name for g in m.genres],
         }
         data.update(related_data)
-        movies_data[m.id] = data
+        movies_data.append(data)
 
     meta_data = {
         'page': page_number,
@@ -91,4 +91,4 @@ def get_movies():
     if paginated.has_prev:
         links['prev'] = f'{API_BASE_PATH}/movies?limit={limit}&start={start-limit}'
 
-    return jsonify({'movies': movies_data, 'meta': meta_data, 'links': links})
+    return jsonify({'results': movies_data, 'meta': meta_data, 'links': links})
