@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/dornheimer/moviedialogs_db.svg?branch=master)](https://travis-ci.com/dornheimer/moviedialogs_db)
+
 # moviedialogs api
 
 RESTful API for retrieving data provided by the [Cornell Movie-Dialogs Corpus](www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html) (Cristian Danescu-Niculescu-Mizil and Lillian Lee).
