@@ -15,16 +15,16 @@ class RoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
         response_data = json.loads(response.get_data())
-        self.assertEqual(response_data['movie']['id'], 'm0')
-        self.assertEqual(response_data['movie']['title'], "10 things i hate about you")
-        self.assertCountEqual(response_data['movie']['genres'], ['comedy', 'romance'])
-        self.assertEqual(len(response_data['movie']['characters']), 12)
+        self.assertEqual(response_data['id'], 'm0')
+        self.assertEqual(response_data['title'], "10 things i hate about you")
+        self.assertCountEqual(response_data['genres'], ['comedy', 'romance'])
+        self.assertEqual(len(response_data['characters']), 12)
 
     def test_get_movies_pagination(self):
         response = self.client.get(f'{API_BASE_PATH}/movies')
         self.assertEqual(response.status_code, 200)
 
         response_data = json.loads(response.get_data())
-        self.assertEqual(len(response_data['movies']), 10)
-        self.assertIn('m0', response_data['movies'])
-        self.assertNotIn('m10', response_data['movies'])
+        self.assertEqual(len(response_data['results']), 5)
+        self.assertIn('m0', [m['id'] for m in response_data['results']])
+        self.assertNotIn('m10', [m['id'] for m in response_data['results']])
