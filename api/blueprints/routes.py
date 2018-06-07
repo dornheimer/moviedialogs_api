@@ -13,6 +13,13 @@ from db.models import (
 bp = Blueprint('routes', __name__)
 
 
+def format_path(base, **kwargs):
+    path = f'{API_BASE_PATH}/{base}?'
+    for param, value in kwargs.items():
+        path += f"&{param}={value}"
+    return path
+
+
 def object_as_dict(obj):
     """
     Convert sqlalchemy row object to python dict.
@@ -87,8 +94,10 @@ def get_movies():
 
     links = {}
     if paginated.has_next:
-        links['next'] = f'{API_BASE_PATH}/movies?limit={limit}&start={start+limit}'
+        next_ = start + limit
+        links['next'] = format_path('movies', limit=limit, start=next_)
     if paginated.has_prev:
-        links['prev'] = f'{API_BASE_PATH}/movies?limit={limit}&start={start-limit}'
+        prev = start - limit
+        links['prev'] = format_path('movies', limit=limit, start=prev)
 
     return jsonify({'results': movies_data, 'meta': meta_data, 'links': links})
