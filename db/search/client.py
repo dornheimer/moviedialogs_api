@@ -1,6 +1,7 @@
 import json
 import time
 
+from flask import abort
 from sqlalchemy import case
 from elasticsearch.helpers import bulk
 
@@ -29,7 +30,7 @@ class ESClient:
     def delete_index(self, model):
         self.client.indices.delete(index=model.__tablename__)
 
-    def query_index(self, index, query, page, per_page):
+    def query_index(self, index, query, start, limit):
         if self.client is None:
             return [], 0
         body = {
@@ -39,8 +40,8 @@ class ESClient:
                     'fields': ['*']
                 }
             },
-            'from': (page - 1) * per_page,
-            'size': per_page
+            'from': start,
+            'size': limit
         }
         search = self.client.search(
             index=index,
@@ -50,8 +51,8 @@ class ESClient:
         ids = [hit['_id'] for hit in search['hits']['hits']]
         return ids, search['hits']['total']
 
-    def search(self, model, query, page, per_page):
-        ids, total = self.query_index(model.__tablename__, query, page, per_page)
+    def search(self, model, query, start, limit):
+        ids, total = self.query_index(model.__tablename__, query, start, limit)
         if total == 0:
             return ids, total
         # Get objects from returned ids and enforce the same order as the ES query

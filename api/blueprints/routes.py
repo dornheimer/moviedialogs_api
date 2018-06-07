@@ -102,9 +102,30 @@ def get_movies():
 def search_movies():
     es_client = current_app.elasticsearch
     es_client.initialize_model(Movie)
-    page = request.args.get('page', 1, type=int)
+
+    limit = request.args.get('limit', 5, type=int)
+    start = request.args.get('start', 0, type=int)
+    page_number = int(start / limit) + 1
     query = request.args.get('query', None, type=str)
+
     if query is not None:
-        query, total = es_client.search(Movie, query, page, per_page=10)
-        movies_data = {m.id: object_as_dict(m) for m in query}
-        return jsonify({'movies': movies_data})
+        movies, total = es_client.search(Movie, query, start, limit)
+        movies_data = [object_as_dict(m) for m in movies]
+
+    meta_data = {
+        'page': page_number,
+        'start': start,
+        'limit': limit,
+        'total_pages': total // limit,
+        'total_items': total
+    }
+
+    links = {}
+    if limit * (page_number+1) <= total:
+        next_ = start + limit
+        links['next'] = url_for('.search_movies', query=query, limit=limit, start=next_)
+    if page_number > 1:
+        prev = start - limit
+        links['prev'] = url_for('.search_movies', query=query, limit=limit, start=prev)
+
+    return jsonify({'results': movies_data, 'meta': meta_data, 'links': links})

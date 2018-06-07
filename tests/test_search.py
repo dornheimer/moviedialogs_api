@@ -31,6 +31,6 @@ class SearchTestCase(unittest.TestCase):
     def test_search(self):
         self.app.elasticsearch.initialize_model(Movie)
 
-        query, total = self.app.elasticsearch.search(Movie, 'nightma', 1, 10)
+        query, total = self.app.elasticsearch.search(Movie, 'nightma', 0, 5)
         self.assertEqual(total, len(movie_titles))
         self.assertTrue(all(mt in [m.title for m in query] for mt in movie_titles))
