@@ -59,10 +59,10 @@ def get_genre(genre_id):
     return jsonify(object_as_dict(genre))
 
 
-@bp.route(f'{API_BASE_PATH}/lines/<string:line_id>', methods=['GET'])
-def get_line(line_id):
-    line = Line.query.get_or_404(line_id)
-    return jsonify(object_as_dict(line))
+@bp.route(f'{API_BASE_PATH}/lines/<int:conv_id>', methods=['GET'])
+def get_lines(conv_id):
+    conversation = Conversation.query.get_or_404(conv_id)
+    return jsonify([object_as_dict(l) for l in conversation.lines])
 
 
 @bp.route(f'{API_BASE_PATH}/movies/<string:movie_id>', methods=['GET'])
