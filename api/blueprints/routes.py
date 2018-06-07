@@ -20,6 +20,17 @@ def format_path(base, **kwargs):
     return path
 
 
+def collect_movie_data(movie):
+    data = object_as_dict(movie)
+    related_data = {
+        'characters': [object_as_dict(char) for char in movie.characters],
+        'conversations': [c.id for c in movie.conversations],
+        'genres': [g.name for g in movie.genres],
+    }
+    data.update(related_data)
+    return data
+
+
 def object_as_dict(obj):
     """
     Convert sqlalchemy row object to python dict.
@@ -57,13 +68,7 @@ def get_line(line_id):
 @bp.route(f'{API_BASE_PATH}/movies/<string:movie_id>', methods=['GET'])
 def get_movie(movie_id):
     movie = Movie.query.get_or_404(movie_id)
-    data = object_as_dict(movie)
-    related_data = {
-        'characters': [char.id for char in movie.characters],
-        'genres': [g.name for g in movie.genres],
-    }
-    data.update(related_data)
-    return jsonify(data)
+    return jsonify(collect_movie_data(movie))
 
 
 @bp.route(f'{API_BASE_PATH}/movies', methods=['GET'])
@@ -71,18 +76,9 @@ def get_movies():
     limit = request.args.get('limit', 5, type=int)
     start = request.args.get('start', 0, type=int)
     page_number = int(start / limit) + 1
-    paginated = Movie.query.paginate(page=page_number, per_page=limit)
 
-    movies = paginated.items
-    movies_data = []
-    for m in movies:
-        data = object_as_dict(m)
-        related_data = {
-            'characters': [char.id for char in m.characters],
-            'genres': [g.name for g in m.genres],
-        }
-        data.update(related_data)
-        movies_data.append(data)
+    paginated = Movie.query.paginate(page=page_number, per_page=limit)
+    movies_data = [collect_movie_data(m) for m in paginated.items]
 
     meta_data = {
         'page': page_number,
