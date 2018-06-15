@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, url_for
 from sqlalchemy import inspect
 
 from config import API_BASE_PATH
@@ -10,7 +10,18 @@ from db.models import (
     Movie,
 )
 
-bp = Blueprint('routes', __name__)
+bp = Blueprint('routes', __name__, url_prefix=API_BASE_PATH)
+
+
+def collect_movie_data(movie):
+    data = object_as_dict(movie)
+    related_data = {
+        'characters': [object_as_dict(char) for char in movie.characters],
+        'conversations': [c.id for c in movie.conversations],
+        'genres': [g.name for g in movie.genres],
+    }
+    data.update(related_data)
+    return data
 
 
 def object_as_dict(obj):
@@ -23,59 +34,50 @@ def object_as_dict(obj):
             for c in inspect(obj).mapper.column_attrs}
 
 
-@bp.route(f'{API_BASE_PATH}/characters/<string:character_id>', methods=['GET'])
+@bp.route('/characters/<string:character_id>', methods=['GET'])
 def get_character(character_id):
     character = Character.query.get_or_404(character_id)
     return jsonify(object_as_dict(character))
 
 
-@bp.route(f'{API_BASE_PATH}/conversations/<int:conversation_id>', methods=['GET'])
+@bp.route('/conversations/<int:conversation_id>', methods=['GET'])
 def get_conversation(conversation_id):
     conversation = Conversation.query.get_or_404(conversation_id)
     return jsonify(object_as_dict(conversation))
 
 
-@bp.route(f'{API_BASE_PATH}/genres/<int:genre_id>', methods=['GET'])
+@bp.route('/conversations/<int:conversation_id>/lines', methods=['GET'])
+def get_conversation_lines(conversation_id):
+    conversation = Conversation.query.get_or_404(conversation_id)
+    return jsonify([object_as_dict(l) for l in conversation.lines])
+
+
+@bp.route('/genres/<int:genre_id>', methods=['GET'])
 def get_genre(genre_id):
     genre = Genre.query.get_or_404(genre_id)
     return jsonify(object_as_dict(genre))
 
 
-@bp.route(f'{API_BASE_PATH}/lines/<string:line_id>', methods=['GET'])
+@bp.route('/lines/<string:line_id>', methods=['GET'])
 def get_line(line_id):
     line = Line.query.get_or_404(line_id)
     return jsonify(object_as_dict(line))
 
 
-@bp.route(f'{API_BASE_PATH}/movies/<string:movie_id>', methods=['GET'])
+@bp.route('/movies/<string:movie_id>', methods=['GET'])
 def get_movie(movie_id):
     movie = Movie.query.get_or_404(movie_id)
-    data = object_as_dict(movie)
-    related_data = {
-        'characters': [char.id for char in movie.characters],
-        'genres': [g.name for g in movie.genres],
-    }
-    data.update(related_data)
-    return jsonify(data)
+    return jsonify(collect_movie_data(movie))
 
 
-@bp.route(f'{API_BASE_PATH}/movies', methods=['GET'])
+@bp.route('/movies', methods=['GET'])
 def get_movies():
     limit = request.args.get('limit', 5, type=int)
     start = request.args.get('start', 0, type=int)
     page_number = int(start / limit) + 1
-    paginated = Movie.query.paginate(page=page_number, per_page=limit)
 
-    movies = paginated.items
-    movies_data = []
-    for m in movies:
-        data = object_as_dict(m)
-        related_data = {
-            'characters': [char.id for char in m.characters],
-            'genres': [g.name for g in m.genres],
-        }
-        data.update(related_data)
-        movies_data.append(data)
+    paginated = Movie.query.paginate(page=page_number, per_page=limit)
+    movies_data = [collect_movie_data(m) for m in paginated.items]
 
     meta_data = {
         'page': page_number,
@@ -87,8 +89,10 @@ def get_movies():
 
     links = {}
     if paginated.has_next:
-        links['next'] = f'{API_BASE_PATH}/movies?limit={limit}&start={start+limit}'
+        next_ = start + limit
+        links['next'] = url_for('.get_movies', limit=limit, start=next_)
     if paginated.has_prev:
-        links['prev'] = f'{API_BASE_PATH}/movies?limit={limit}&start={start-limit}'
+        prev = start - limit
+        links['prev'] = url_for('.get_movies', limit=limit, start=prev)
 
     return jsonify({'results': movies_data, 'meta': meta_data, 'links': links})
