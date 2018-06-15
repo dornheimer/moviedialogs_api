@@ -10,7 +10,7 @@ from db.models import (
     Movie,
 )
 
-bp = Blueprint('routes', __name__)
+bp = Blueprint('routes', __name__, url_prefix=API_BASE_PATH)
 
 
 def collect_movie_data(movie):
@@ -34,43 +34,43 @@ def object_as_dict(obj):
             for c in inspect(obj).mapper.column_attrs}
 
 
-@bp.route(f'{API_BASE_PATH}/characters/<string:character_id>', methods=['GET'])
+@bp.route('/characters/<string:character_id>', methods=['GET'])
 def get_character(character_id):
     character = Character.query.get_or_404(character_id)
     return jsonify(object_as_dict(character))
 
 
-@bp.route(f'{API_BASE_PATH}/conversations/<int:conversation_id>', methods=['GET'])
+@bp.route('/conversations/<int:conversation_id>', methods=['GET'])
 def get_conversation(conversation_id):
     conversation = Conversation.query.get_or_404(conversation_id)
     return jsonify(object_as_dict(conversation))
 
 
-@bp.route(f'{API_BASE_PATH}/conversations/<int:conversation_id>/lines', methods=['GET'])
+@bp.route('/conversations/<int:conversation_id>/lines', methods=['GET'])
 def get_conversation_lines(conversation_id):
     conversation = Conversation.query.get_or_404(conversation_id)
     return jsonify([object_as_dict(l) for l in conversation.lines])
 
 
-@bp.route(f'{API_BASE_PATH}/genres/<int:genre_id>', methods=['GET'])
+@bp.route('/genres/<int:genre_id>', methods=['GET'])
 def get_genre(genre_id):
     genre = Genre.query.get_or_404(genre_id)
     return jsonify(object_as_dict(genre))
 
 
-@bp.route(f'{API_BASE_PATH}/lines/<string:line_id>', methods=['GET'])
+@bp.route('/lines/<string:line_id>', methods=['GET'])
 def get_line(line_id):
     line = Line.query.get_or_404(line_id)
     return jsonify(object_as_dict(line))
 
 
-@bp.route(f'{API_BASE_PATH}/movies/<string:movie_id>', methods=['GET'])
+@bp.route('/movies/<string:movie_id>', methods=['GET'])
 def get_movie(movie_id):
     movie = Movie.query.get_or_404(movie_id)
     return jsonify(collect_movie_data(movie))
 
 
-@bp.route(f'{API_BASE_PATH}/movies', methods=['GET'])
+@bp.route('/movies', methods=['GET'])
 def get_movies():
     limit = request.args.get('limit', 5, type=int)
     start = request.args.get('start', 0, type=int)
