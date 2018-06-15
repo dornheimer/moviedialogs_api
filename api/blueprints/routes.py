@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, url_for
 from sqlalchemy import inspect
 
 from config import API_BASE_PATH
@@ -11,13 +11,6 @@ from db.models import (
 )
 
 bp = Blueprint('routes', __name__)
-
-
-def format_path(base, **kwargs):
-    path = f'{API_BASE_PATH}/{base}?'
-    for param, value in kwargs.items():
-        path += f"&{param}={value}"
-    return path
 
 
 def collect_movie_data(movie):
@@ -91,9 +84,9 @@ def get_movies():
     links = {}
     if paginated.has_next:
         next_ = start + limit
-        links['next'] = format_path('movies', limit=limit, start=next_)
+        links['next'] = url_for('.get_movies', limit=limit, start=next_)
     if paginated.has_prev:
         prev = start - limit
-        links['prev'] = format_path('movies', limit=limit, start=prev)
+        links['prev'] = url_for('.get_movies', limit=limit, start=prev)
 
     return jsonify({'results': movies_data, 'meta': meta_data, 'links': links})
