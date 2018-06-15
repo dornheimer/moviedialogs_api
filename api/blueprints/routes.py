@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, url_for
+from flask import Blueprint, current_app, request, jsonify, url_for
 from sqlalchemy import inspect
 
 from config import API_BASE_PATH
@@ -94,5 +94,38 @@ def get_movies():
     if paginated.has_prev:
         prev = start - limit
         links['prev'] = url_for('.get_movies', limit=limit, start=prev)
+
+    return jsonify({'results': movies_data, 'meta': meta_data, 'links': links})
+
+
+@bp.route('/search', methods=['GET'])
+def search_movies():
+    es_client = current_app.elasticsearch
+    es_client.initialize_model(Movie)
+
+    limit = request.args.get('limit', 5, type=int)
+    start = request.args.get('start', 0, type=int)
+    page_number = int(start / limit) + 1
+    query = request.args.get('query', None, type=str)
+
+    if query is not None:
+        movies, total = es_client.search(Movie, query, start, limit)
+        movies_data = [object_as_dict(m) for m in movies]
+
+    meta_data = {
+        'page': page_number,
+        'start': start,
+        'limit': limit,
+        'total_pages': total // limit,
+        'total_items': total
+    }
+
+    links = {}
+    if limit * (page_number+1) <= total:
+        next_ = start + limit
+        links['next'] = url_for('.search_movies', query=query, limit=limit, start=next_)
+    if page_number > 1:
+        prev = start - limit
+        links['prev'] = url_for('.search_movies', query=query, limit=limit, start=prev)
 
     return jsonify({'results': movies_data, 'meta': meta_data, 'links': links})

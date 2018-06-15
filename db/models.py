@@ -47,6 +47,7 @@ movies_genres = Table(
 
 
 class Movie(Base):
+    __searchable__ = ['title']
     __tablename__ = 'movies'
     id = Column(String, primary_key=True)
 

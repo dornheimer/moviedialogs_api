@@ -1,3 +1,4 @@
+sudo: required
 language: python
 cache: pip
 python:
@@ -7,12 +8,19 @@ env:
   global:
     - PIPENV_IGNORE_VIRTUALENVS=1
     - TEST_DATABASE_URI="postgresql://postgres@localhost/travis_ci_test"
+    - ELASTICSEARCH_URL="http://localhost:9200"
 services:
   - postgresql
+  - elasticsearch
+before_install:
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.4.deb
+  - sudo dpkg -i --force-confnew elasticsearch-6.2.4.deb
+  - sudo service elasticsearch restart
 # command to install dependencies
 install: "make"
 # command to run tests
 before_script:
+  - sleep 10  # allow Elasticsearch to initialize
   - psql -c 'create database travis_ci_test;' -U postgres
   - pipenv run python -m tests.data.setup_testdb
 script:
